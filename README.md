@@ -1,5 +1,7 @@
 # thor-rearrange-starter
 
+**NOTE: Expect the version of AI2-THOR to update to v2.4.10 soon!**
+
 Install AI2-THOR with
 ```
 pip install ai2thor==2.4.9
