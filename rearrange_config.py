@@ -4,7 +4,7 @@ import numpy as np
 import json
 import os
 
-REQUIRED_VERSION = '2.4.9'
+REQUIRED_VERSION = '2.4.10'
 
 
 class Controller:
@@ -55,6 +55,7 @@ class Controller:
             'MoveHandRight': {},
             'MoveHandUp': {},
             'MoveHandDown': {},
+            'Done': {},
         }
 
         self.valid_walkthrough_actions = {
@@ -66,6 +67,7 @@ class Controller:
             'RotateLeft': {},
             'LookUp': {},
             'LookDown': {},
+            'Done': {},
         }
 
         # local thor controller to execute all the actions
@@ -95,7 +97,7 @@ class Controller:
                 'type': obj['objectType'],
                 'position': obj['position'],
                 'rotation': obj['rotation'],
-                'openness': 'NOT IMPLEMENTED',
+                'openness': obj['openPercent'] if obj['openable'] else None,
                 'bounding_box':
                     obj['objectOrientedBoundingBox']['cornerPoints'] if
                     obj['objectOrientedBoundingBox'] else None

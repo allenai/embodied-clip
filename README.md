@@ -1,12 +1,13 @@
 # thor-rearrange-starter
 
-**NOTE: Expect the version of AI2-THOR to update to v2.4.10 soon!**
-
 Install AI2-THOR with
+
 ```
-pip install ai2thor==2.4.9
+pip install ai2thor==2.4.10
 ```
+
 Then use the starting template in `main.py` to leverage a running example:
+
 ```python
 from rearrange_config import Controller
 controller = Controller(stage='train')
