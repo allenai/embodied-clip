@@ -289,19 +289,27 @@ class Controller:
         actions = self.valid_walkthrough_actions if self.walkthrough_phase \
             else self.valid_rearrange_actions
 
+        # makes sure the action is valid among hand-chosen task actions
         if action not in actions:
             actions = str(list(actions.keys()))
             raise ValueError(
                 'Invalid Action! Must be in ' + actions + '.' +
                 'For all actions, use controller.debug_step(action, **kwargs)')
 
+        # makes sure all required args are specified
         for req_key in actions[action]:
             if req_key not in kwargs:
                 raise ValueError(f'The {action} action must specify {req_key}')
 
-        if 'moveMagnitude' in actions[action] and \
-                action.startswith('MoveHand'):
-            # caps the hand move magnitude at 0.5 meters
+        # caps the hand move magnitude at 0.5 meters
+        if action == 'MoveHandDelta':
+            x, y, z = kwargs['x'], kwargs['y'], kwargs['z']
+            mag = (x ** 2 + y ** 2 + z ** 2) ** 0.5
+            if mag > 0.5:
+                kwargs['x'] = x / mag * 0.5
+                kwargs['y'] = y / mag * 0.5
+                kwargs['z'] = z / mag * 0.5
+        elif action.startswith('MoveHand'):
             kwargs['moveMagnitude'] = min(0.5, kwargs['moveMagnitude'])
 
         self.controller.step(action, **kwargs)
