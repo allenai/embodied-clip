@@ -35,43 +35,64 @@ class Controller:
 
         # maps to the minimum required kwargs
         self.valid_rearrange_actions = {
-            'PickupObject': {'x', 'y'},
+            # Here, moveMagnitude corresponds to the openness of the object.
             'OpenObject': {'x', 'y', 'moveMagnitude'},
+            'PickupObject': {'x', 'y'},
             'TouchThenApplyForce': {'x', 'y'},
-            'MoveHandDelta': {'x', 'y', 'z'},
-            'RotateHand': {'x', 'y', 'z'},
+
+            # Movement step is 0.25 meters.
             'MoveAhead': {},
             'MoveLeft': {},
             'MoveRight': {},
             'MoveBack': {},
+
+            # Rotates the agent by 30 degrees.
             'RotateRight': {},
             'RotateLeft': {},
-            'DropHandObject': {},
+
+            # Peaks the agent's head up/down by 30 degrees.
             'LookUp': {},
             'LookDown': {},
-            'MoveHandAhead': {},
-            'MoveHandBack': {},
-            'MoveHandLeft': {},
-            'MoveHandRight': {},
-            'MoveHandUp': {},
-            'MoveHandDown': {},
+
+            # Specify the move magnitude in meters. The max is 0.5 meters.
+            'MoveHandAhead': {'moveMagnitude'},
+            'MoveHandBack': {'moveMagnitude'},
+            'MoveHandLeft': {'moveMagnitude'},
+            'MoveHandRight': {'moveMagnitude'},
+            'MoveHandUp': {'moveMagnitude'},
+            'MoveHandDown': {'moveMagnitude'},
+
+            # More hand actions.
+            'MoveHandDelta': {'x', 'y', 'z'},
+            'RotateHand': {'x', 'y', 'z'},
+            'DropHandObject': {},
+
+            # Agent signal that it's completed the task.
             'Done': {},
         }
 
         self.valid_walkthrough_actions = {
+            # Movement step is 0.25 meters.
             'MoveAhead': {},
             'MoveRight': {},
             'MoveLeft': {},
             'MoveBack': {},
+
+            # Rotates the agent by 30 degrees.
             'RotateRight': {},
             'RotateLeft': {},
+
+            # Peaks the agent's head up/down by 30 degrees.
             'LookUp': {},
             'LookDown': {},
+
+            # Agent signal that it's ready to move on.
             'Done': {},
         }
 
         # local thor controller to execute all the actions
-        self.controller = ai2thor.controller.Controller(**kwargs)
+        self.controller = ai2thor.controller.Controller(
+            rotateStepDegrees=30, **kwargs)
         self.walkthrough_phase = True
 
         # for identical pickupable objects, the predicted objects are
@@ -92,6 +113,8 @@ class Controller:
 
     @staticmethod
     def get_pose_info(objs):
+        """Returns the type, position, rotation, openness, and bounding box
+           for each object."""
         def _extract_obj_data(obj):
             return {
                 'type': obj['objectType'],
@@ -112,6 +135,7 @@ class Controller:
 
     @staticmethod
     def l2_distance(obj1, obj2):
+        """Calculates the L2 distance between object 1 and object 2."""
         p1 = obj1['position']
         p2 = obj2['position']
 
@@ -121,6 +145,7 @@ class Controller:
 
     @property
     def last_event(self):
+        """Returns the Event corresponding to the most recent step action."""
         return self.controller.last_event
 
     @property
@@ -220,8 +245,12 @@ class Controller:
 
         # open objects
         for obj in data['openable_data']:
+            # id is re-found due to possible floating point errors
+            id = [l_obj for l_obj in self.last_event.metadata['objects'] if
+                  l_obj['name'] == obj['name']][0]['objectId']
             self.controller.step(
                 action='OpenObject',
+                objectId=id,
                 moveMagnitude=obj['target_openness'],
                 forceAction=True)
 
@@ -259,14 +288,22 @@ class Controller:
         """Restricted step with only the allowable actions."""
         actions = self.valid_walkthrough_actions if self.walkthrough_phase \
             else self.valid_rearrange_actions
+
         if action not in actions:
             actions = str(list(actions.keys()))
             raise ValueError(
                 'Invalid Action! Must be in ' + actions + '.' +
                 'For all actions, use controller.debug_step(action, **kwargs)')
+
         for req_key in actions[action]:
             if req_key not in kwargs:
                 raise ValueError(f'The {action} action must specify {req_key}')
+
+        if 'moveMagnitude' in actions[action] and \
+                action.startswith('MoveHand'):
+            # caps the hand move magnitude at 0.5 meters
+            kwargs['moveMagnitude'] = min(0.5, kwargs['moveMagnitude'])
+
         self.controller.step(action, **kwargs)
 
     def debug_step(self, action, **kwargs):
