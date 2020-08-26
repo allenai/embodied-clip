@@ -116,7 +116,7 @@ class ActionSpace:
                 low = bound.low
                 high = bound.high
                 vstr += f'{tab * 2}{var_name}: float(low={low}, high={high})\n'
-            vstr = '\n' + vstr if vstr else ''
+            vstr = '\n' + vstr[:-1] if vstr else ''
             s += f'{tab}{fn_name}({vstr}),\n'
         s = s[:-2] if s else ''
         return 'ActionSpace(\n' + s + '\n}'
