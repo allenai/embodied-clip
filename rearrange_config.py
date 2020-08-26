@@ -204,6 +204,13 @@ class Helpers:
         event = controller.step(thor_action, **kwargs)
         return event.metadata['lastActionSuccess']
 
+    @staticmethod
+    def IoU_3D(self, box1, box2):
+        """Calculate the intersection over union between box1 and box2."""
+        # TODO: Confirm that the following implementation is accurate
+        # https://github.com/AlienCat-K/3D-IoU-Python/blob/master/3D-IoU-Python.py
+        pass
+
 
 class Controller:
     """Custom AI2-THOR Controller for the task of object unshuffling."""
@@ -742,6 +749,12 @@ class Controller:
             event = self.controller.step('ToggleMapView')
             self.map_shuffle = event.frame
             self.controller.step('ToggleMapView')
+
+    def evaluate(
+            self,
+            target_poses: Dict[str, Any],
+            predicted_poses: Dict[str, Any]):
+        pass
 
     def _visualize_difference(self, path_dir='./visuals', filename=None):
         """Creates a GIF highlighting the difference after reset and

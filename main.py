@@ -12,4 +12,5 @@ for i_episode in range(20):
         controller.action_space.execute_random_action()
     # determine similarities
     initial_poses, target_poses, predicted_poses = controller.poses
+    controller.evaluate(target_poses, predicted_poses)
     controller.reset()
