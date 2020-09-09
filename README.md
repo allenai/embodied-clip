@@ -82,12 +82,14 @@ controller.action_space
 
 **Walkthrough ActionSpace 🚶.** If the controller is currently in the walkthrough phase (i.e., shuffle has not yet been called on the episode), then the action space will consist of:
 
+
+☝️ 👈 👉 👇 ↩️ ↪️ 🧍 🧎 🙄 😔 ✅
 ```python
 ActionSpace(
   # move the agent by 0.25 meters
   move_ahead(),
-  move_right(),
   move_left(),
+  move_right(),
   move_back(),
 
   # rotate the agent by 30 degrees
@@ -109,12 +111,13 @@ ActionSpace(
 
 **Unshuffling ActionSpace 👷.** If the controller is currently in the unshuffling phase, then the action space will consist of several additional _interactible_ actions:
 
+☝️ 👈 👉 👇 ↩️ ↪️ 🧍 🧎 🙄 😔 ✅&nbsp;&nbsp;&nbsp; 🔓 🏋️ 📌 ✋ 👋 💧
 ```python
 ActionSpace(
   # move the agent by 0.25 meters
   move_ahead(),
-  move_right(),
   move_left(),
+  move_right(),
   move_back(),
 
   # rotate the agent by 30 degrees
