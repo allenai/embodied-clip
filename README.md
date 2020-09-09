@@ -68,7 +68,7 @@ for i_episode in range(dataset_size):
 controller = Controller(stage='val')
 ```
 
-### Action Space
+### 🎮 Action Space
 
 **Action space property.** Both the _walkthrough_ and the _unshuffling_ phases have their own `ActionSpace` accessible with:
 
