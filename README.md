@@ -1,8 +1,8 @@
 # Unshuffle AI2-THOR
 
-<!-- <img src="/docs/assets/rearrangement/cover.svg" alt="Object Rearrangement Example"> -->
+<img src="https://ai2thor.allenai.org/docs/assets/rearrangement/cover.svg" alt="Object Rearrangement Example" width="100%">
 
-### Files
+## Files
 
 This repo consists of the following files:
 
@@ -11,9 +11,9 @@ This repo consists of the following files:
 - **data/val.json**. Scene configuration data for 20 unique iTHOR scenes. None of these scenes overlap with _train.json_. Within each scene, there are also 50 different scene rearrangements tasks with each rearrangement changing the state of between 1 and 5 objects.
 - **rearrange_config.py**. A helper file that parses the data and configures the objects for each rearrangement. It also provides the goal state of each object.
 
-### Python Setup
+## Python Setup
 
-#### Installation
+### Installation
 
 Each of the actions supports typing within Python, so we require the use of **Python 3.6+**.
 
@@ -23,7 +23,7 @@ To ensure reproducible results, we're restricting all users to use the exact **s
 pip install ai2thor==2.4.12
 ```
 
-#### main.py
+### main.py
 
 In the `main.py` file, you will find:
 
@@ -50,7 +50,7 @@ for i_episode in range(20):
 controller = Controller(stage='val')
 ```
 
-#### Action Space
+### Action Space
 
 **Action space property.** Both the _walkthrough_ and the _unshuffling_ phases have their own `ActionSpace` accessible with:
 
@@ -141,7 +141,7 @@ ActionSpace(
 
 **(x, y).** Interacting with an object requires targeting that object. We use `x` and `y` coordinates between [0:1] to target each object, based on the _last RGB image frame_ from the agent's camera. The `x` and `y` coordinates correspond to the relative position of the target object along the horizontal and vertical image axes, respectively. An example of targeting 2 different pickupable objects in the same frame follows:
 
-<img src="/docs/assets/rearrangement/coordinates.svg" alt="Object Rearrangement Example" style="width: 100%; max-width: 400px;">
+<img src="https://ai2thor.allenai.org/docs/assets/rearrangement/coordinates.svg" alt="Object Rearrangement Example" style="width: 100%; max-width: 400px;">
 
 **Parameter Scales.** As shown in unshuffle's ActionSpace, all parameters have been scaled between 0 and 1. For `rotate_held_object`, 0.5 corresponds to 90 degrees and -0.5 corresponds to -90 degrees. For `push_object`, a `force_magnitude` of 1 corresponds to 50 newtons of force, which should be sufficient to reasonably move any pickupable object.
 
@@ -160,7 +160,7 @@ controller.move_ahead()
 controller.pickup_object(x=0.64, y=0.40)
 ```
 
-#### Object Poses
+### Object Poses
 
 **Accessing object poses.** After the agent is done both the walkthrough and reshuffling phase, it can access the poses of each object with:
 
