@@ -17,15 +17,13 @@
 
 # 📁 Files
 
-This repo consists of the following files:
+**main.py 👈.** Provides a starting snippet to easily set up the task, utilizing _rearrange_config.py_. This is intended to be the only file you to modify.
 
-- **main.py 👈.** Provides a starting snippet to easily set up the task, utilizing _rearrange_config.py_.
-
-Which utilizes the helper files:
+**Static setup files👊.** These files help execute actions and load the scene:
 
 - **rearrange_config.py 🔌.** Parses the data and configures the objects for each rearrangement. It also provides the goal state of each object.
-- **data/train.json.** Scene configuration data for 80 iTHOR scenes. Within each scene, there are 50 different scene rearrangements tasks. Each rearrangement changes the state of between 1 and 5 objects.
-- **data/val.json.** Scene configuration data for 20 unique iTHOR scenes. None of these scenes overlap with _train.json_. Within each scene, there are also 50 different scene rearrangements tasks with each rearrangement changing the state of between 1 and 5 objects.
+- **data/train.json 🏟️.** Scene configuration data for 80 iTHOR scenes. Within each scene, there are 50 different scene rearrangements tasks. Each rearrangement changes the state of between 1 and 5 objects.
+- **data/val.json 🏘️.** Scene configuration data for 20 unique iTHOR scenes. None of these scenes overlap with _train.json_. Within each scene, there are also 50 different scene rearrangements tasks with each rearrangement changing the state of between 1 and 5 objects.
 
 # 🐍 Python Setup
 
