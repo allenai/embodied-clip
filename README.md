@@ -19,26 +19,32 @@
 
 This repo consists of the following files:
 
-- **main.py**. Provides a starting snippet to easily set up the task, utilizing _rearrange_config.py_.
-- **data/train.json**. Scene configuration data for 80 iTHOR scenes. Within each scene, there are 50 different scene rearrangements tasks. Each rearrangement changes the state of between 1 and 5 objects.
-- **data/val.json**. Scene configuration data for 20 unique iTHOR scenes. None of these scenes overlap with _train.json_. Within each scene, there are also 50 different scene rearrangements tasks with each rearrangement changing the state of between 1 and 5 objects.
-- **rearrange_config.py**. A helper file that parses the data and configures the objects for each rearrangement. It also provides the goal state of each object.
+- **main.py 👈.** Provides a starting snippet to easily set up the task, utilizing _rearrange_config.py_.
+
+Which utilizes the helper files:
+
+- **rearrange_config.py 🔌.** Parses the data and configures the objects for each rearrangement. It also provides the goal state of each object.
+- **data/train.json.** Scene configuration data for 80 iTHOR scenes. Within each scene, there are 50 different scene rearrangements tasks. Each rearrangement changes the state of between 1 and 5 objects.
+- **data/val.json.** Scene configuration data for 20 unique iTHOR scenes. None of these scenes overlap with _train.json_. Within each scene, there are also 50 different scene rearrangements tasks with each rearrangement changing the state of between 1 and 5 objects.
 
 # 🐍 Python Setup
 
 ## 💻 Installation
 
-Each of the actions supports typing within Python, so we require the use of **Python 3.6+**.
-
-To ensure reproducible results, we're restricting all users to use the exact **same version of AI2-THOR**, which can be installed via pip with:
-
 ```bash
-pip install ai2thor==2.4.12 scipy==1.5.2
+pip install ai2thor==2.4.12 scipy
 ```
+
+**Python 3.6+ 🐍.** Each of the actions supports typing within Python, so we require the use of Python 3.6+.
+
+**AI2-THOR 2.4.12 🧞.** To ensure reproducible results, we're restricting all users to use the exact same version of AI2-THOR.
+
+**SciPy 🧑‍🔬.** We utilize SciPy for evaluation. It helps calculate the IoU between 3D bounding boxes.
+
 
 ## 👉 main.py
 
-In the `main.py` file, you will find:
+**Lightweight setup ✨.** In the `main.py` file, you will find:
 
 ```python
 from rearrange_config import Controller
@@ -58,7 +64,7 @@ for i_episode in range(dataset_size):
     controller.reset()  # prepare next episode
 ```
 
-**Validation data.** To use the validation data, initialize the controller with:
+**Validation data 👏.** To use the validation data, initialize the controller with:
 
 ```python
 controller = Controller(stage='val')
@@ -66,13 +72,13 @@ controller = Controller(stage='val')
 
 ## 🎮 Action Space
 
-**Action space property.** Both the _walkthrough_ and the _unshuffling_ phases have their own `ActionSpace` accessible with:
+**Action space property 🌜.** Both the _walkthrough_ and the _unshuffling_ phases have their own `ActionSpace` accessible with:
 
 ```python
 controller.action_space
 ```
 
-**Walkthrough ActionSpace.** If the controller is currently in the walkthrough phase (i.e., shuffle has not yet been called on the episode), then the action space will consist of:
+**Walkthrough ActionSpace 🚶.** If the controller is currently in the walkthrough phase (i.e., shuffle has not yet been called on the episode), then the action space will consist of:
 
 ```python
 ActionSpace(
@@ -99,7 +105,7 @@ ActionSpace(
 )
 ```
 
-**Unshuffling ActionSpace.** If the controller is currently in the unshuffling phase, then the action space will consist of several additional _interactible_ actions:
+**Unshuffling ActionSpace 👷.** If the controller is currently in the unshuffling phase, then the action space will consist of several additional _interactible_ actions:
 
 ```python
 ActionSpace(
@@ -153,21 +159,21 @@ ActionSpace(
 )
 ```
 
-**(x, y).** Interacting with an object requires targeting that object. We use `x` and `y` coordinates between [0:1] to target each object, based on the _last RGB image frame_ from the agent's camera. The `x` and `y` coordinates correspond to the relative position of the target object along the horizontal and vertical image axes, respectively. An example of targeting 2 different pickupable objects in the same frame follows:
+**(x, y) 🎯.** Interacting with an object requires targeting that object. We use `x` and `y` coordinates between [0:1] to target each object, based on the _last RGB image frame_ from the agent's camera. The `x` and `y` coordinates correspond to the relative position of the target object along the horizontal and vertical image axes, respectively. An example of targeting 2 different pickupable objects in the same frame follows:
 
 <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/coordinates.svg" alt="Object Rearrangement Example" width="50%">
 
-**Parameter Scales.** As shown in unshuffle's ActionSpace, all parameters have been scaled between 0 and 1. For `rotate_held_object`, 0.5 corresponds to 90 degrees and -0.5 corresponds to -90 degrees. For `push_object`, a `force_magnitude` of 1 corresponds to 50 newtons of force, which should be sufficient to reasonably move any pickupable object.
+**Parameter Scales ⚖️.** As shown in unshuffle's ActionSpace, all parameters have been scaled between 0 and 1. For `rotate_held_object`, 0.5 corresponds to 90 degrees and -0.5 corresponds to -90 degrees. For `push_object`, a `force_magnitude` of 1 corresponds to 50 newtons of force, which should be sufficient to reasonably move any pickupable object.
 
-**Move held object clipping.** The action `move_held_object` will clip the upper bound at 0.5 meters corresponding to how much a hand held object can move in a single step.
+**Move held object clipping ✂️.** The action `move_held_object` will clip the upper bound at 0.5 meters corresponding to how much a hand held object can move in a single step.
 
-**Random actions.** Demonstrated in `main.py`, randomly execute actions in the action space with:
+**Random actions 👻.** Demonstrated in `main.py`, randomly execute actions in the action space with:
 
 ```python
 controller.action_space.execute_random_action()
 ```
 
-**Specific actions.** Actions can be executed by calling the action from the controller, as in:
+**Specific actions 🕵️.** Actions can be executed by calling the action from the controller, as in:
 
 ```python
 controller.move_ahead()
@@ -176,17 +182,17 @@ controller.pickup_object(x=0.64, y=0.40)
 
 ## 🪑 Object Poses
 
-**Accessing object poses.** After the agent is done both the walkthrough and reshuffling phase, it can access the poses of each object with:
+**Accessing object poses 🧘.** After the agent is done both the walkthrough and reshuffling phase, it can access the poses of each object with:
 
 ```python
 initial_poses, target_poses, predicted_poses = controller.poses
 ```
 
-**Reading an object's pose.** Here, `initial_poses`, `target_poses`, and `predicted_poses` evaluate to a _list of dictionaries_ and are defined as:
+**Reading an object's pose 📖.** Here, `initial_poses`, `target_poses`, and `predicted_poses` evaluate to a _list of dictionaries_ and are defined as:
 
-- **initial_poses.** The list of object poses if the agent were to do nothing to the environment during the _unshuffling_ phase.
-- **target_poses.** The list of object poses that the agent sees during the walkthrough phase.
-- **predicted_poses.** The list of object poses _after_ the agent makes all its changes to the environment during the _unshuffling_ phase.
+- **initial_poses 🏁.** The list of object poses if the agent were to do nothing to the environment during the _unshuffling_ phase.
+- **target_poses 🎯.** The list of object poses that the agent sees during the walkthrough phase.
+- **predicted_poses 🤔.** The list of object poses _after_ the agent makes all its changes to the environment during the _unshuffling_ phase.
 
 Each dictionary is an _object's pose_ in the following form:
 
@@ -211,17 +217,17 @@ Each dictionary is an _object's pose_ in the following form:
 }
 ```
 
-**Matching objects across poses.** Across `initial_poses`, `target_poses`, and `predicted_poses`, the _ith entry_ in each list will _always_ correspond to the same object across each pose list. So, `initial_poses[5]` will refer to the same object as `target_poses[5]` and `predicted_poses[5]`. Most scenes have around 70 objects, among which, 10 to 20 are pickupable by the agent.
+**Matching objects across poses 🤝.** Across `initial_poses`, `target_poses`, and `predicted_poses`, the _ith entry_ in each list will _always_ correspond to the same object across each pose list. So, `initial_poses[5]` will refer to the same object as `target_poses[5]` and `predicted_poses[5]`. Most scenes have around 70 objects, among which, 10 to 20 are pickupable by the agent.
 
-**Pose keys:**
+**Pose keys 🔑:**
 
-- **openness.** For objects where the openness value does not fit (e.g., Bowl, Spoon), the openess value is `None`.
-- **bounding_box.** Bounding boxes are only given for moveable objects, where the set of moveable objects may consist of couches or chairs, that are not necessarily pickupable. For pickupable objects, the `bounding_box` is aligned to the object's relative axes. For moveable objects that are non-pickupable, the
-- **is_broken.** No object's initial pose or target pose will ever require breaking an object. But, if the agent decides to pick up an object, and drop it on a hard surface, it's possible that the object can break.
+- **openness 🔓.** For objects where the openness value does not fit (e.g., Bowl, Spoon), the openess value is `None`.
+- **bounding_box 📦.** Bounding boxes are only given for moveable objects, where the set of moveable objects may consist of couches or chairs, that are not necessarily pickupable. For pickupable objects, the `bounding_box` is aligned to the object's relative axes. For moveable objects that are non-pickupable, the
+- **is_broken 💔.** No object's initial pose or target pose will ever require breaking an object. But, if the agent decides to pick up an object, and drop it on a hard surface, it's possible that the object can break.
 
 ## 🏆 Evaluation
 
-**Evaluation function.** To evaluate a single episode call:
+**Evaluation function 😊 😑 ☹️.** To evaluate a single episode call:
 
 ```python
 episode_score = controller.evaluate(
@@ -230,7 +236,7 @@ episode_score = controller.evaluate(
     predicted_poses)
 ```
 
-**Score calculation.** The episode's score ranges between [0:1] and is calculated as follows:
+**Score calculation 💯.** The episode's score ranges between [0:1] and is calculated as follows:
 
 1. If any predicted object is broken, return 0.
 2. Otherwise if any non-shuffled object is out of place, return 0.
@@ -238,5 +244,5 @@ episode_score = controller.evaluate(
 
 For steps 2 and 3, an object is considered in-place/unshuffled if it satisfies all of the following:
 
-1. **Openness.** It's `openness` between its target pose and predicted pose is off by less than 20 degrees. The openness check is only applied to objects that can open.
-2. **Position and Rotation.** The object's 3D bounding box from its target pose and the predicted pose must have an IoU over 0.5. The positional check is only relevant to object's that can move.
+1. **Openness 🔓.** It's `openness` between its target pose and predicted pose is off by less than 20 degrees. The openness check is only applied to objects that can open.
+2. **Position 📍 and Rotation 🙃.** The object's 3D bounding box from its target pose and the predicted pose must have an IoU over 0.5. The positional check is only relevant to object's that can move.
