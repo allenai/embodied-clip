@@ -1,9 +1,9 @@
 # TODO: Implement evaluations and rotation checks
 
 import ai2thor.controller
-from PIL import Image
 from collections import defaultdict
 from typing import Dict, Callable, Tuple, Any, Union, List
+from scipy.spatial import ConvexHull, Delaunay
 import numpy as np
 import random
 import json
@@ -144,8 +144,8 @@ class Helpers:
 
     @staticmethod
     def extract_obj_data(obj):
+        """Return object evaluation metrics based on the env state."""
         if 'type' in obj:
-            # using cached data, remove name
             return {
                 'type': obj['type'],
                 'position': obj['position'],
@@ -211,11 +211,50 @@ class Helpers:
         return event.metadata['lastActionSuccess']
 
     @staticmethod
-    def IoU_3D(self, box1, box2):
-        """Calculate the intersection over union between box1 and box2."""
-        # TODO: Confirm that the following implementation is accurate
-        # https://github.com/AlienCat-K/3D-IoU-Python/blob/master/3D-IoU-Python.py
-        pass
+    def iou(b1: np.ndarray, b2: np.ndarray, num_points: int = 2197):
+        """Calculate the IoU between 3d bounding boxes b1 and b2."""
+        def _outer_bounds(points_1: np.ndarray,
+                          points_2: np.ndarray) -> Dict[str, Dict[str, float]]:
+            """Sample points from the outer bounds formed by points_1/2."""
+            assert points_1.shape == points_2.shape
+            bounds = dict()
+            for i in range(len(points_1)):
+                x1, y1, z1 = points_1[i]
+                x2, y2, z2 = points_2[i]
+                points = [(x1, 'x'), (x2, 'x'),
+                        (y1, 'y'), (y2, 'y'),
+                        (z1, 'z'), (z2, 'z')]
+                for val, d_key in points:
+                    if d_key not in bounds:
+                        bounds[d_key] = {'min': val, 'max': val}
+                    else:
+                        if val > bounds[d_key]['max']:
+                            bounds[d_key]['max'] = val
+                        elif val < bounds[d_key]['min']:
+                            bounds[d_key]['min'] = val
+            return bounds
+
+        def _in_box(box: np.ndarray, points: np.ndarray) -> np.ndarray:
+            """For each point, return if its in the hull."""
+            hull = ConvexHull(box)
+            deln = Delaunay(box[hull.vertices])
+            return deln.find_simplex(points) >= 0
+
+        bounds = _outer_bounds(b1, b2)
+        dim_points = int(num_points ** (1 / 3))
+
+        xs = np.linspace(bounds['x']['min'], bounds['x']['max'], dim_points)
+        ys = np.linspace(bounds['y']['min'], bounds['y']['max'], dim_points)
+        zs = np.linspace(bounds['z']['min'], bounds['z']['max'], dim_points)
+        points = np.array(
+            [[x, y, z] for x in xs for y in ys for z in zs], copy=False)
+
+        in_b1 = _in_box(b1, points)
+        in_b2 = _in_box(b2, points)
+
+        intersection = np.count_nonzero(in_b1 * in_b2)
+        union = np.count_nonzero(in_b1 + in_b2)
+        return intersection / union
 
 
 class Controller:
