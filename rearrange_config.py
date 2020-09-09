@@ -10,7 +10,7 @@ import json
 import os
 import logging
 
-REQUIRED_VERSION = '2.4.10'
+REQUIRED_VERSION = '2.4.12'
 DATA_DIR = './data'
 MODE = 'default'  # TODO: remove added for visualization debugging
 ROTATE_STEP_DEGREES = 30
@@ -23,7 +23,8 @@ class BoundedFloat:
 
     def __init__(self, low: float, high: float):
         """High is the max float value, low is the min (both inclusive)."""
-        if type(low) not in {float, int} or type(high) not in {float, int}:
+        self.types = {float, int, np.float64}
+        if type(low) not in self.types or type(high) not in self.types:
             raise ValueError('Bounds must both be floats.')
         if low > high:
             raise ValueError('low must be less than high.')
@@ -36,7 +37,7 @@ class BoundedFloat:
 
     def __contains__(self, n: float):
         """Assert n is within this classes bounded range."""
-        if type(n) not in {float, int}:
+        if type(n) not in self.types:
             raise ValueError('n must be a float (or an int).')
         return n >= self.low and n <= self.high
 
@@ -112,14 +113,15 @@ class ActionSpace:
         for action_fn, vars in self.actions.items():
             fn_name = action_fn.__name__
             vstr = ''
-            for var_name, bound in vars.items():
+            for i, (var_name, bound) in enumerate(vars.items()):
                 low = bound.low
                 high = bound.high
-                vstr += f'{tab * 2}{var_name}: float(low={low}, high={high})\n'
+                vstr += f'{tab * 2}{var_name}: float(low={low}, high={high})'
+                vstr += '\n' if i+1 == len(vars) else ',\n'
             vstr = '\n' + vstr[:-1] if vstr else ''
             s += f'{tab}{fn_name}({vstr}),\n'
         s = s[:-2] if s else ''
-        return 'ActionSpace(\n' + s + '\n}'
+        return 'ActionSpace(\n' + s + '\n)'
 
 
 class Helpers:
@@ -192,6 +194,10 @@ class Helpers:
         action = action_fn, kwargs
         if action not in action_space:
             raise ValueError(error_message)
+
+        if 'force_magnitude' in kwargs:
+            # rescale for newtons
+            kwargs['force_magnitude'] *= 50
 
         # get rid of bad variable names
         for better_kwarg, thor_kwarg in updated_kwarg_names.items():
@@ -296,6 +302,8 @@ class Controller:
             self.move_back: {},
             self.rotate_right: {},
             self.rotate_left: {},
+            self.stand: {},
+            self.crouch: {},
             self.look_up: {},
             self.look_down: {},
             self.done: {}
@@ -304,36 +312,39 @@ class Controller:
         if self.shuffle_called:
             # shuffle allowed actions
             actions.update({
-                self.open: {
+                self.open_object: {
                     'x': BoundedFloat(low=0, high=1),
                     'y': BoundedFloat(low=0, high=1),
                     'openness': BoundedFloat(low=0, high=1)
                 },
-                self.pickup: {
+                self.pickup_object: {
                     'x': BoundedFloat(low=0, high=1),
                     'y': BoundedFloat(low=0, high=1),
                 },
-                self.push: {
+                self.push_object: {
                     'x': BoundedFloat(low=0, high=1),
                     'y': BoundedFloat(low=0, high=1),
-                    # TODO: FILL IN THE REST! newtons, dir, etc.
+                    'rel_x_force': BoundedFloat(low=-0.5, high=0.5),
+                    'rel_y_force': BoundedFloat(low=-0.5, high=0.5),
+                    'rel_z_force': BoundedFloat(low=-0.5, high=0.5),
+                    'force_magnitude': BoundedFloat(low=0, high=1)
                 },
                 self.move_held_object: {
                     'x_meters': BoundedFloat(low=-0.5, high=0.5),
                     'y_meters': BoundedFloat(low=-0.5, high=0.5),
                     'z_meters': BoundedFloat(low=-0.5, high=0.5),
                 },
-                # self.rotate_held_object: {
-                    # 'x_degrees': BoundedFloat(low=-90, high=90),
-                    # 'y_degrees': BoundedFloat(low=-90, high=90),
-                    # 'z_degrees': BoundedFloat(low=-90, high=90),
-                # },
+                self.rotate_held_object: {
+                    'x_degrees': BoundedFloat(low=-0.5, high=0.5),
+                    'y_degrees': BoundedFloat(low=-0.5, high=0.5),
+                    'z_degrees': BoundedFloat(low=-0.5, high=0.5),
+                },
                 self.drop_held_object: {}
             })
 
         return ActionSpace(actions)
 
-    def open(self, x: float, y: float, openness: float) -> bool:
+    def open_object(self, x: float, y: float, openness: float) -> bool:
         """Open the object corresponding to x/y to openess.
 
         -----
@@ -348,17 +359,19 @@ class Controller:
         be successful if the specified openness would cause a collision
         or if the object at x/y is not openable.
         """
+        # openness = 0 actually means fully open under the hood! -- weird...
+        openness = openness + 0.001 if openness == 0 else openness
         return Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
-            action_fn=self.open,
+            action_fn=self.open_object,
             thor_action='OpenObject',
             error_message=(
                 'x/y/openness must be in [0:1] and in unshuffle phase.'),
             updated_kwarg_names={'openness': 'moveMagnitude'},
             x=x, y=y, openness=openness)
 
-    def pickup(self, x: float, y: float) -> bool:
+    def pickup_object(self, x: float, y: float) -> bool:
         """Pick up the object corresponding to x/y.
 
         -----
@@ -375,22 +388,54 @@ class Controller:
         return Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
-            action_fn=self.pickup,
+            action_fn=self.pickup_object,
             thor_action='PickupObject',
             error_message='x/y must be in [0:1] and in unshuffle phase.',
             x=x, y=y)
 
-    def push(self,
-             x: float,
-             y: float) -> bool:
-        # TODO: What are the other args here?
+    def push_object(
+            self,
+            x: float,
+            y: float,
+            rel_x_force: float,
+            rel_y_force: float,
+            rel_z_force: float,
+            force_magnitude: float) -> bool:
+        """Push an object along a surface.
+
+        -----
+        Attributes
+        :x (float, min=0.0, max=1.0) horizontal percentage from the last frame
+           that the target object is located.
+        :y (float, min=0.0, max=1.0) vertical percentage from the last frame
+           that the target object is located.
+        :rel_x_force (float, min=-0.5, max=0.5) amount of relative force
+           applied along the x axis.
+        :rel_y_force (float, min=-0.5, max=0.5) amount of relative force
+           applied along the y axis.
+        :rel_z_force (float, min=-0.5, max=0.5) amount of relative force
+           applied along the z axis.
+        :force_magnitude (float, min=0, max=1) relative amount of force
+           applied during this push action. Within AI2-THOR, the force is
+           rescaled to be between 0 and 50 newtons, which is estimated to
+           sufficiently move all pickupable objects.
+
+        ---
+        Return (bool) if the action is successful. The action will not be
+        successful if the object at x/y is not pickupable.
+        """
         return Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
-            action_fn=self.push,
+            action_fn=self.push_object,
             thor_action='TouchThenApplyForce',
-            error_message='x/y must be in [0:1] and in unshuffle phase.',
-            x=x, y=y)
+            error_message=(
+                'x/y must be in [0:1] and in unshuffle phase.\n' +
+                'rel_{x/y/z}_force must be in [-0.5:0.5].\n' +
+                'force_magnitude must be in [0:1].'),
+            default_thor_kwargs={'handDistance': 1.5},
+            x=x, y=y, rel_x_force=rel_x_force, rel_y_force=rel_y_force,
+            rel_z_force=rel_z_force, force_magnitude=force_magnitude)
 
     def move_ahead(self) -> bool:
         """Move the agent ahead from its facing direction by 0.25 meters.
@@ -457,6 +502,28 @@ class Controller:
             action_space=self.action_space,
             action_fn=self.rotate_right,
             thor_action='RotateRight')
+
+    def stand(self) -> bool:
+        """Stand the agent from the crouching position.
+
+        Return (bool) if the last action was successful.
+        """
+        return Helpers.execute_action(
+            controller=self.controller,
+            action_space=self.action_space,
+            action_fn=self.stand,
+            thor_action='Stand')
+
+    def crouch(self) -> bool:
+        """Crouch the agent from the standing position.
+
+        Return (bool) if the last action was successful.
+        """
+        return Helpers.execute_action(
+            controller=self.controller,
+            action_space=self.action_space,
+            action_fn=self.crouch,
+            thor_action='Crouch')
 
     def look_up(self) -> bool:
         """Turn the agent's head and camera up by 30 degrees.
@@ -713,13 +780,9 @@ class Controller:
                 forceAction=True)
 
         # arrange target poses for pickupable objects
-        event = self.controller.step(
+        self.controller.step(
             'SetObjectPoses', objectPoses=data['target_poses'])
         self.shuffle_called = False
-        if MODE == 'visualize':
-            event = self.controller.step('ToggleMapView')
-            self.map_reset = event.frame
-            self.controller.step('ToggleMapView')
 
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
@@ -741,32 +804,6 @@ class Controller:
                 forceAction=True)
 
         # arrange target poses for pickupable objects
-        event = self.controller.step(
+        self.controller.step(
             'SetObjectPoses', objectPoses=data['starting_poses'])
         self.shuffle_called = True
-
-        if MODE == 'visualize':
-            event = self.controller.step('ToggleMapView')
-            self.map_shuffle = event.frame
-            self.controller.step('ToggleMapView')
-
-    def evaluate(
-            self,
-            target_poses: Dict[str, Any],
-            predicted_poses: Dict[str, Any]):
-        pass
-
-    def _visualize_difference(self, path_dir='./visuals', filename=None):
-        """Creates a GIF highlighting the difference after reset and
-           shuffle have both been called."""
-        img, *imgs = [
-            Image.fromarray(im) for im in
-            (self.map_reset, self.map_shuffle)]
-        if filename is None:
-            scene = self.scenes[self.current_scene_idx]
-            i = self.current_rearrangement
-            filename = f'{scene}_{i}'
-        path = os.path.join(path_dir, filename)
-        path = path[:-4] if path[-4:] == '.gif' else path
-        img.save(fp=f'{path}.gif', format='GIF',
-                 append_images=imgs, save_all=True, duration=350, loop=0)
