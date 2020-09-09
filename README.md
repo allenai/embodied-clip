@@ -141,7 +141,7 @@ ActionSpace(
 
 **(x, y).** Interacting with an object requires targeting that object. We use `x` and `y` coordinates between [0:1] to target each object, based on the _last RGB image frame_ from the agent's camera. The `x` and `y` coordinates correspond to the relative position of the target object along the horizontal and vertical image axes, respectively. An example of targeting 2 different pickupable objects in the same frame follows:
 
-<img src="https://ai2thor.allenai.org/docs/assets/rearrangement/coordinates.svg" alt="Object Rearrangement Example" style="width: 100%; max-width: 400px;">
+<img src="https://ai2thor.allenai.org/docs/assets/rearrangement/coordinates.svg" alt="Object Rearrangement Example" width="50%">
 
 **Parameter Scales.** As shown in unshuffle's ActionSpace, all parameters have been scaled between 0 and 1. For `rotate_held_object`, 0.5 corresponds to 90 degrees and -0.5 corresponds to -90 degrees. For `push_object`, a `force_magnitude` of 1 corresponds to 50 newtons of force, which should be sufficient to reasonably move any pickupable object.
 
