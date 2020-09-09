@@ -1,4 +1,4 @@
-# thor-rearrange-starter
+# Unshuffle AI2-THOR
 
 <!-- <img src="/docs/assets/rearrangement/cover.svg" alt="Object Rearrangement Example"> -->
 
