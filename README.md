@@ -1,7 +1,3 @@
-> This repository contains **starter code** for the **object rearrangement task** within AI2-THOR.
-
-<br>
-
 <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/cover.svg" alt="Object Rearrangement Example" width="100%">
 
 ## 📝 Task Description
