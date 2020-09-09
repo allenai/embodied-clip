@@ -1,6 +1,6 @@
 <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/cover.svg" alt="Object Rearrangement Example" width="100%">
 
-## 📝 Task Description
+# 📝 Task Description
 
 **Overview 🤖.** The task involves _rearranging and modifying objects_ randomly placed in a household. Here the agent:
 1. Walks-through the scene with the target objects configured.
@@ -15,7 +15,7 @@
 * Recalling the state of all objects.
 * Multi-step reasoning, where manipulating an object might require moving a blocking object.
 
-## 📁 Files
+# 📁 Files
 
 This repo consists of the following files:
 
@@ -24,9 +24,9 @@ This repo consists of the following files:
 - **data/val.json**. Scene configuration data for 20 unique iTHOR scenes. None of these scenes overlap with _train.json_. Within each scene, there are also 50 different scene rearrangements tasks with each rearrangement changing the state of between 1 and 5 objects.
 - **rearrange_config.py**. A helper file that parses the data and configures the objects for each rearrangement. It also provides the goal state of each object.
 
-## 🐍 Python Setup
+# 🐍 Python Setup
 
-### 💻 Installation
+## 💻 Installation
 
 Each of the actions supports typing within Python, so we require the use of **Python 3.6+**.
 
@@ -36,7 +36,7 @@ To ensure reproducible results, we're restricting all users to use the exact **s
 pip install ai2thor==2.4.12 scipy==1.5.2
 ```
 
-### 👉 main.py
+## 👉 main.py
 
 In the `main.py` file, you will find:
 
@@ -64,7 +64,7 @@ for i_episode in range(dataset_size):
 controller = Controller(stage='val')
 ```
 
-### 🎮 Action Space
+## 🎮 Action Space
 
 **Action space property.** Both the _walkthrough_ and the _unshuffling_ phases have their own `ActionSpace` accessible with:
 
@@ -174,7 +174,7 @@ controller.move_ahead()
 controller.pickup_object(x=0.64, y=0.40)
 ```
 
-### 🪑 Object Poses
+## 🪑 Object Poses
 
 **Accessing object poses.** After the agent is done both the walkthrough and reshuffling phase, it can access the poses of each object with:
 
@@ -219,7 +219,7 @@ Each dictionary is an _object's pose_ in the following form:
 - **bounding_box.** Bounding boxes are only given for moveable objects, where the set of moveable objects may consist of couches or chairs, that are not necessarily pickupable. For pickupable objects, the `bounding_box` is aligned to the object's relative axes. For moveable objects that are non-pickupable, the
 - **is_broken.** No object's initial pose or target pose will ever require breaking an object. But, if the agent decides to pick up an object, and drop it on a hard surface, it's possible that the object can break.
 
-### 🏆 Evaluation
+## 🏆 Evaluation
 
 **Evaluation function.** To evaluate a single episode call:
 
