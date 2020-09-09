@@ -205,7 +205,7 @@ Each dictionary is an _object's pose_ in the following form:
 - **bounding_box.** Bounding boxes are only given for moveable objects, where the set of moveable objects may consist of couches or chairs, that are not necessarily pickupable. For pickupable objects, the `bounding_box` is aligned to the object's relative axes. For moveable objects that are non-pickupable, the
 - **is_broken.** No object's initial pose or target pose will ever require breaking an object. But, if the agent decides to pick up an object, and drop it on a hard surface, it's possible that the object can break.
 
-#### Evaluation
+### Evaluation
 
 **Evaluation function.** To evaluate a single episode call:
 
