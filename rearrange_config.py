@@ -282,16 +282,16 @@ class Controller:
 
         if stage == 'train':
             data_path = os.path.join(DATA_DIR, 'train.json')
-            eval_data_path = os.path.join(DATA_DIR, 'evaluation', 'train.json')
+            # eval_data_path = os.path.join(DATA_DIR, 'evaluation', 'train.json')
         elif stage == 'val':
-            eval_data_path = os.path.join(DATA_DIR, 'val.json')
-            eval_data_path = os.path.join(DATA_DIR, 'evaluation', 'val.json')
+            data_path = os.path.join(DATA_DIR, 'val.json')
+            # eval_data_path = os.path.join(DATA_DIR, 'evaluation', 'val.json')
 
         with open(data_path, 'r') as f:
             self.data = json.loads(f.read())
 
-        with open(eval_data_path, 'r') as f:
-            self.eval_data = json.loads(f.read())
+        # with open(eval_data_path, 'r') as f:
+            # self.eval_data = json.loads(f.read())
 
         self.scenes = list(self.data.keys())
         if not self.scenes:
@@ -699,17 +699,15 @@ class Controller:
         """Return (initial, target, predicted) pose of the scenes's objects."""
         # access cached object poses
         scene = self.scenes[self.current_scene_idx]
-        cached_poses = self.eval_data[scene][self.current_rearrangement]
-        initial_poses = cached_poses['initial_poses']
-        target_poses = cached_poses['target_poses']
 
         if not self.shuffle_called:
             raise Exception('shuffle() must be called before accessing poses')
         predicted_objs = self.controller.last_event.metadata['objects']
 
         # sorts the object order
-        predicted_objs = sorted(
-            predicted_objs, key=lambda obj: obj['name'])
+        predicted_objs = sorted(predicted_objs, key=lambda obj: obj['name'])
+        initial_poses = sorted(self.initial_poses, key=lambda obj: obj['name'])
+        target_poses = sorted(self.target_poses, key=lambda obj: obj['name'])
 
         if scene not in self.identical_objects:
             print('in 1')
@@ -822,6 +820,7 @@ class Controller:
         self.controller.step(
             'SetObjectPoses', objectPoses=data['target_poses'])
         self.shuffle_called = False
+        self.target_poses = self.last_event.metadata['objects']
 
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
@@ -846,3 +845,75 @@ class Controller:
         self.controller.step(
             'SetObjectPoses', objectPoses=data['starting_poses'])
         self.shuffle_called = True
+        self.initial_poses = self.last_event.metadata['objects']
+
+    def evaluate(self,
+                 initial_poses: List[Dict[str, Any]],
+                 target_poses: List[Dict[str, Any]],
+                 predicted_poses: List[Dict[str, Any]]) -> float:
+        """Evaluate the current episode's object poses.
+
+        -----
+        Attribues
+        :initial_poses (List[Dict[str, Any]]) starting poses after shuffle.
+        :target_poses (List[Dict[str, Any]]) starting poses after reset.
+        :predicted_poses (List[Dict[str, Any]]) poses after the agent's
+            unshuffling phase.
+
+        -----
+        Return (float) ranges between [0:1] and is calculated as follows:
+
+        1. If any predicted object is broken, return 0.
+        2. Otherwise if any non-shuffled object is out of place, return 0.
+        3. Otherwise return the average number of successfully unshuffled
+           objects.
+
+        For steps 2 and 3, an object is considered in-place/unshuffled if it
+        satisfies all of the following:
+
+        1. Openness. It's openness between its target pose and predicted pose
+           is off by less than 20 degrees. The openness check is only applied
+           to objects that can open.
+        2. Position and Rotation. The object's 3D bounding box from its target
+           pose and the predicted pose must have an IoU over 0.5. The
+           positional check is only relevant to object's that can move.
+        """
+        cumulative_reward = 0
+        obj_change_count = 0
+
+        for obj_i in range(len(initial_poses)):
+            targ = target_poses[obj_i]
+            init = initial_poses[obj_i]
+            pred = predicted_poses[obj_i]
+
+            # no reward for breaking a non-broken starting object
+            if pred['broken']:
+                return 0
+
+            # check if the object has openness
+            if targ['openness'] is not None:
+                if abs(targ['openness'] - init['openness']) > 0.2:
+                    # openness in the object is meant to change
+                    if abs(targ['openness'] - pred['openness']) > 0.2:
+                        cumulative_reward += 1
+                    obj_change_count += 1
+                elif abs(targ['openness'] - pred['openness']) > 0.2:
+                    # scene is messed up... openness is not meant to change
+                    return 0
+
+            # iou without the agent doing anything
+            expected_iou = Helpers.iou(
+                targ['bounding_box'], init['bounding_box'])
+            pred_iou = Helpers.iou(
+                targ['bounding_box'], pred['bounding_box'])
+
+            # check the positional change
+            if expected_iou <= 0.5:
+                # scene is messed up... obj not supposed to change positions
+                if pred_iou > 0.5:
+                    return 0
+            else:
+                # object position changes
+                cumulative_reward += 1 if pred_iou > 0.5 else 0
+                obj_change_count += 1
+        return cumulative_reward / obj_change_count if obj_change_count else 0
