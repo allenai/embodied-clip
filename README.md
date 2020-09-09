@@ -6,7 +6,7 @@
 
 ## Task Description
 
-The task involves **rearranging and modifying randomly placed household objects** in a room. Here the agent:
+The task involves **rearranging and modifying objects** randomly placed in a household. Here the agent:
 1. Walks-through the scene with the target objects configured.
 2. Resets to its starting position, but the object states around have changed.
 
