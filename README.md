@@ -40,7 +40,7 @@ pip install ai2thor==2.4.12 scipy
 **SciPy 🧑‍🔬.** We utilize SciPy for evaluation. It helps calculate the IoU between 3D bounding boxes.
 
 
-## 👉 main.py
+## ➰ Training and inference loop
 
 **Lightweight setup ✨.** In the `main.py` file, you will find:
 
@@ -50,16 +50,22 @@ controller = Controller(stage='train')
 dataset_size = len(controller.scenes) * controller.shuffles_per_scene
 
 for i_episode in range(dataset_size):
-    # walkthrough
-    for t_step in range(500):
+    # walkthrough the target configuration
+    for t_step in range(1000):
         rgb_observation = controller.last_event.frame
-        controller.action_space.execute_random_action()
 
-    # rearrange
-    controller.shuffle()
-    for t_step in range(500):
-        rgb_observation = controller.last_event.frame
+        ### START replace with your walkthrough action
         controller.action_space.execute_random_action()
+        ### END replace with your action
+
+    # unshuffle to recover the target configuration
+    controller.shuffle()
+    for t_step in range(1000):
+        rgb_observation = controller.last_event.frame
+
+        ### START replace with your unshuffle action
+        controller.action_space.execute_random_action()
+        ### END replace with your action
 
     # evaluation
     score = controller.evaluate(*controller.poses)
@@ -226,7 +232,7 @@ Each dictionary is an _object's pose_ in the following form:
 
 **Pose keys 🔑:**
 
-- `openness 🔓` For objects where the openness value does not fit (e.g., Bowl, Spoon), the openess value is `None`.
+- `openness 🔓` For objects where the openness value does not fit (e.g., Bowl, Spoon), the openness value is `None`.
 - `bounding_box 📦` Bounding boxes are only given for moveable objects, where the set of moveable objects may consist of couches or chairs, that are not necessarily pickupable. For pickupable objects, the `bounding_box` is aligned to the object's relative axes. For moveable objects that are non-pickupable, the
 - `is_broken 💔` No object's initial pose or target pose will ever require breaking an object. But, if the agent decides to pick up an object, and drop it on a hard surface, it's possible that the object can break.
 
@@ -249,5 +255,5 @@ episode_score = controller.evaluate(
 
 For steps 2 and 3, an object is considered in-place/unshuffled if it satisfies all of the following:
 
-1. **Openness 🔓.** It's `openness` between its target pose and predicted pose is off by less than 20 degrees. The openness check is only applied to objects that can open.
+1. **Openness 🔓.** It's `openness` between its target pose and predicted pose is off by less than 20 percent. The openness check is only applied to objects that can open.
 2. **Position 📍 and Rotation 🙃.** The object's 3D bounding box from its target pose and the predicted pose must have an IoU over 0.5. The positional check is only relevant to object's that can move.
