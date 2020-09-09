@@ -2,6 +2,19 @@
 
 <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/cover.svg" alt="Object Rearrangement Example" width="100%">
 
+This repository contains **starter code** for the **object rearrangement task** within AI2-THOR.
+
+The task involves **rearranging randomly placed household objects** in a room and changing the state of the objects, such as **opening/closing** a cabinet.
+
+More specifically, the scene has an initial configuration. **We make changes to the scene** by placing some objects at different locations or changing their state (only open/close state is considered).
+
+The task of the agent is to **recover the initial configuration** of the scene. The agent is allowed to navigate within the scene with the initial configuration and collect data.
+
+Some of the **key challenges** of performing this task include:
+* Identifying objects that have changed.
+* Inferring the state of objects.
+* Planning a path for reaching and manipulating objects (e.g., manipulating an object might require moving a blocking object).
+
 ## Files
 
 This repo consists of the following files:
@@ -30,7 +43,8 @@ In the `main.py` file, you will find:
 ```python
 from rearrange_config import Controller
 controller = Controller(stage='train')
-for i_episode in range(20):
+dataset_size = len(controller.scenes) * controller.shuffles_per_scene
+for i_episode in range(dataset_size):
     # walkthrough
     for t_step in range(500):
         rgb_observation = controller.last_event.frame
