@@ -251,7 +251,7 @@ episode_score = controller.evaluate(
 
 1. ❌ If any predicted object is broken, return 0.
 2. ❌ Otherwise if any non-shuffled object is out of place, return 0.
-3. ✅ Otherwise return the average number of successfully unshuffled objects.
+3. ✔️ Otherwise return the average number of successfully unshuffled objects.
 
 For steps 2 and 3, an object is considered in-place/unshuffled if it satisfies all of the following:
 
