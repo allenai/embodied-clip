@@ -226,23 +226,3 @@ For steps 2 and 3, an object is considered in-place/unshuffled if it satisfies a
 
 1. **Openness.** It's `openness` between its target pose and predicted pose is off by less than 20 degrees. The openness check is only applied to objects that can open.
 2. **Position and Rotation.** The object's 3D bounding box from its target pose and the predicted pose must have an IoU over 0.5. The positional check is only relevant to object's that can move.
-
-Then use the starting template in `main.py` to leverage a running example:
-
-```python
-from rearrange_config import Controller
-controller = Controller(stage='train')
-for i_episode in range(20):
-    controller.reset()
-    # walkthrough
-    for t_step in range(500):
-        rgb_observation = controller.last_event.frame
-        controller.step('MoveAhead')  # or any other action
-    controller.shuffle()
-    # unshuffle
-    for t_step in range(500):
-        rgb_observation = controller.last_event.frame
-        controller.step('MoveAhead')  # or any other action
-    # determine similarities
-    initial_poses, target_poses, predicted_poses = controller.poses
-```
