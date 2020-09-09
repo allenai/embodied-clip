@@ -6,15 +6,15 @@
 
 ## Task Description
 
-The task involves **rearranging and modifying objects** randomly placed in a household. Here the agent:
+**Overview.** The task involves _rearranging and modifying objects_ randomly placed in a household. Here the agent:
 1. Walks-through the scene with the target objects configured.
 2. Resets to its starting position, but the object states around have changed.
 
 > Changes to an object's state may include changes to its position, rotation or openness.
 
-The agent's goal is to **recover the initial configuration** of the scene.
+**Agent's goal.** The agent's goal is to _recover the initial configuration_ of the scene.
 
-Some of the **key challenges** of performing this task include:
+**Key challenges.** Some of the key challenges of performing this task include:
 * Identifying which objects have changed.
 * Recalling the state of all objects.
 * Multi-step reasoning, where manipulating an object might require moving a blocking object.
