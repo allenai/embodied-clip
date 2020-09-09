@@ -1,19 +1,23 @@
-# Unshuffle AI2-THOR
+> This repository contains **starter code** for the **object rearrangement task** within AI2-THOR.
+
+<br>
 
 <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/cover.svg" alt="Object Rearrangement Example" width="100%">
 
-This repository contains **starter code** for the **object rearrangement task** within AI2-THOR.
+## Task Description
 
-The task involves **rearranging randomly placed household objects** in a room and changing the state of the objects, such as **opening/closing** a cabinet.
+The task involves **rearranging and modifying randomly placed household objects** in a room. Here the agent:
+1. Walks-through the scene with the target objects configured.
+2. Resets to its starting position, but the object states around have changed.
 
-More specifically, the scene has an initial configuration. **We make changes to the scene** by placing some objects at different locations or changing their state (only open/close state is considered).
+> Changes to an object's state may include changes to its position, rotation or openness.
 
-The task of the agent is to **recover the initial configuration** of the scene. The agent is allowed to navigate within the scene with the initial configuration and collect data.
+The agent's goal is to **recover the initial configuration** of the scene.
 
 Some of the **key challenges** of performing this task include:
-* Identifying objects that have changed.
-* Inferring the state of objects.
-* Planning a path for reaching and manipulating objects (e.g., manipulating an object might require moving a blocking object).
+* Identifying which objects have changed.
+* Recalling the state of all objects.
+* Multi-step reasoning, where manipulating an object might require moving a blocking object.
 
 ## Files
 
