@@ -50,16 +50,20 @@ pip install ai2thor==2.4.12 scipy
 from rearrange_config import Controller
 controller = Controller(stage='train')
 dataset_size = len(controller.scenes) * controller.shuffles_per_scene
+
 for i_episode in range(dataset_size):
     # walkthrough
     for t_step in range(500):
         rgb_observation = controller.last_event.frame
         controller.action_space.execute_random_action()
+
+    # rearrange
     controller.shuffle()
-    # unshuffle
     for t_step in range(500):
         rgb_observation = controller.last_event.frame
         controller.action_space.execute_random_action()
+
+    # evaluation
     score = controller.evaluate(*controller.poses)
     controller.reset()  # prepare next episode
 ```
