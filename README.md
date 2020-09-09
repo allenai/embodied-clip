@@ -20,7 +20,7 @@ Each of the actions supports typing within Python, so we require the use of **Py
 To ensure reproducible results, we're restricting all users to use the exact **same version of AI2-THOR**, which can be installed via pip with:
 
 ```bash
-pip install ai2thor==2.4.12
+pip install ai2thor==2.4.12 scipy==1.5.2
 ```
 
 ### main.py

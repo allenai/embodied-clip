@@ -66,6 +66,3 @@ def iou(b1: np.ndarray, b2: np.ndarray, num_points: int = 2197):
     intersection = np.count_nonzero(in_b1 * in_b2)
     union = np.count_nonzero(in_b1 + in_b2)
     return intersection / union
-
-
-13 ** 3
