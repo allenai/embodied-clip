@@ -18,15 +18,16 @@ At a high level:
 * Sum the total number of points in both boxes, and divide that by the number
   of points in the union of both boxes.
 """
-from typing import List, Tuple, Sequence
+from typing import List, Tuple, Sequence, Dict
 from scipy.spatial import ConvexHull, Delaunay
 import numpy as np
 
 
 def iou(b1: np.ndarray, b2: np.ndarray, num_points: int = 2197):
-    """Calculates the IoU between 3d bounding boxes b1 and b2."""
-    def _outer_bounds(points_1: np.ndarray, points_2: np.ndarray):
-        """Sample points from the outer bounds formed by points_1 and points_2."""
+    """Calculate the IoU between 3d bounding boxes b1 and b2."""
+    def _outer_bounds(points_1: np.ndarray,
+                      points_2: np.ndarray) -> Dict[str, Dict[str, float]]:
+        """Sample points from the outer bounds formed by points_1/2."""
         assert points_1.shape == points_2.shape
         bounds = dict()
         for i in range(len(points_1)):
@@ -45,7 +46,7 @@ def iou(b1: np.ndarray, b2: np.ndarray, num_points: int = 2197):
                         bounds[d_key]['min'] = val
         return bounds
 
-    def _in_box(box: np.ndarray, points: np.ndarray) -> Sequence[bool]:
+    def _in_box(box: np.ndarray, points: np.ndarray) -> np.ndarray:
         """For each point, return if its in the hull."""
         hull = ConvexHull(box)
         deln = Delaunay(box[hull.vertices])
