@@ -21,9 +21,9 @@
 
 **Static setup files👊.** These files help execute actions and load the scene:
 
-- `rearrange_config.py 🔌` Parses the data and configures the objects for each rearrangement. It also provides the goal state of each object.
-- `data/train.json 🏟️` Scene configuration data for 80 iTHOR scenes. Within each scene, there are 50 different scene rearrangements tasks. Each rearrangement changes the state of between 1 and 5 objects.
-- `data/val.json 🏘️` Scene configuration data for 20 unique iTHOR scenes. None of these scenes overlap with _train.json_. Within each scene, there are also 50 different scene rearrangements tasks with each rearrangement changing the state of between 1 and 5 objects.
+- `rearrange_config.py 🔌.` Parses the data and configures the objects for each rearrangement. It also provides the goal state of each object.
+- `data/train.json 🏟️.` Scene configuration data for 80 iTHOR scenes. Within each scene, there are 50 different scene rearrangements tasks. Each rearrangement changes the state of between 1 and 5 objects.
+- `data/val.json 🏘️.` Scene configuration data for 20 unique iTHOR scenes. None of these scenes overlap with _train.json_. Within each scene, there are also 50 different scene rearrangements tasks with each rearrangement changing the state of between 1 and 5 objects.
 
 # 🐍 Python Setup
 
@@ -201,9 +201,9 @@ initial_poses, target_poses, predicted_poses = controller.poses
 
 **Reading an object's pose 📖.** Here, `initial_poses`, `target_poses`, and `predicted_poses` evaluate to a _list of dictionaries_ and are defined as:
 
-- `initial_poses 🏁` The list of object poses if the agent were to do nothing to the environment during the _unshuffling_ phase.
-- `target_poses 🎯` The list of object poses that the agent sees during the walkthrough phase.
-- `predicted_poses 🤔` The list of object poses _after_ the agent makes all its changes to the environment during the _unshuffling_ phase.
+- `initial_poses 🏁.` The list of object poses if the agent were to do nothing to the environment during the _unshuffling_ phase.
+- `target_poses 🎯.` The list of object poses that the agent sees during the walkthrough phase.
+- `predicted_poses 🤔.` The list of object poses _after_ the agent makes all its changes to the environment during the _unshuffling_ phase.
 
 Each dictionary is an _object's pose_ in the following form:
 
@@ -232,9 +232,9 @@ Each dictionary is an _object's pose_ in the following form:
 
 **Pose keys 🔑:**
 
-- `openness 🔓` For objects where the openness value does not fit (e.g., Bowl, Spoon), the openness value is `None`.
-- `bounding_box 📦` Bounding boxes are only given for moveable objects, where the set of moveable objects may consist of couches or chairs, that are not necessarily pickupable. For pickupable objects, the `bounding_box` is aligned to the object's relative axes. For moveable objects that are non-pickupable, the
-- `is_broken 💔` No object's initial pose or target pose will ever require breaking an object. But, if the agent decides to pick up an object, and drop it on a hard surface, it's possible that the object can break.
+- `openness 🔓.` For objects where the openness value does not fit (e.g., Bowl, Spoon), the openness value is `None`.
+- `bounding_box 📦.` Bounding boxes are only given for moveable objects, where the set of moveable objects may consist of couches or chairs, that are not necessarily pickupable. For pickupable objects, the `bounding_box` is aligned to the object's relative axes. For moveable objects that are non-pickupable, the
+- `is_broken 💔.` No object's initial pose or target pose will ever require breaking an object. But, if the agent decides to pick up an object, and drop it on a hard surface, it's possible that the object can break.
 
 ## 🏆 Evaluation
 
