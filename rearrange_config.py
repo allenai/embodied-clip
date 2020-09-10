@@ -1,4 +1,4 @@
-# TODO: Implement evaluations and rotation checks
+"""Helper file to configure scenes and evaluate object pose predictions."""
 
 import ai2thor.controller
 from collections import defaultdict
@@ -12,7 +12,6 @@ import logging
 
 REQUIRED_VERSION = '2.4.12'
 DATA_DIR = './data'
-MODE = 'default'  # TODO: remove added for visualization debugging
 ROTATE_STEP_DEGREES = 30
 MAX_HAND_METERS = 0.5
 logging.basicConfig(level=logging.INFO)
@@ -168,7 +167,7 @@ class Helpers:
     @staticmethod
     def get_pose_info(
             objs: Union[List[Dict[str, Any]], Dict[str, Any]]
-            ) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+    ) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
         """Return data about each specified object.
 
         For each object, the return consists of its type, position, rotation,
@@ -211,19 +210,19 @@ class Helpers:
         return event.metadata['lastActionSuccess']
 
     @staticmethod
-    def iou(b1: np.ndarray, b2: np.ndarray, num_points: int = 2197):
+    def iou(b1: np.ndarray, b2: np.ndarray, num_points: int = 2197) -> float:
         """Calculate the IoU between 3d bounding boxes b1 and b2."""
         def _outer_bounds(points_1: np.ndarray,
                           points_2: np.ndarray) -> Dict[str, Dict[str, float]]:
             """Sample points from the outer bounds formed by points_1/2."""
             assert points_1.shape == points_2.shape
             bounds = dict()
-            for i in range(len(points_1)):
+            for i in range(points_1.shape[0]):
                 x1, y1, z1 = points_1[i]
                 x2, y2, z2 = points_2[i]
                 points = [(x1, 'x'), (x2, 'x'),
-                        (y1, 'y'), (y2, 'y'),
-                        (z1, 'z'), (z2, 'z')]
+                          (y1, 'y'), (y2, 'y'),
+                          (z1, 'z'), (z2, 'z')]
                 for val, d_key in points:
                     if d_key not in bounds:
                         bounds[d_key] = {'min': val, 'max': val}
@@ -254,7 +253,7 @@ class Helpers:
 
         intersection = np.count_nonzero(in_b1 * in_b2)
         union = np.count_nonzero(in_b1 + in_b2)
-        return intersection / union
+        return intersection / union if union else 0
 
 
 class Controller:
@@ -282,16 +281,11 @@ class Controller:
 
         if stage == 'train':
             data_path = os.path.join(DATA_DIR, 'train.json')
-            # eval_data_path = os.path.join(DATA_DIR, 'evaluation', 'train.json')
         elif stage == 'val':
             data_path = os.path.join(DATA_DIR, 'val.json')
-            # eval_data_path = os.path.join(DATA_DIR, 'evaluation', 'val.json')
 
         with open(data_path, 'r') as f:
             self.data = json.loads(f.read())
-
-        # with open(eval_data_path, 'r') as f:
-            # self.eval_data = json.loads(f.read())
 
         self.scenes = list(self.data.keys())
         if not self.scenes:
@@ -300,7 +294,7 @@ class Controller:
 
         # assumes the same number of rearrangements per scene
         self.current_rearrangement = -1
-        self.max_rearrangements = len(list(self.data.values())[0])
+        self.shuffles_per_scene = len(list(self.data.values())[0])
 
         # local thor controller to execute all the actions
         self.controller = ai2thor.controller.Controller(
@@ -771,6 +765,7 @@ class Controller:
                 print(pred_idxs_left)
 
                 # target idx / initial idx are in sync
+                # TODO: COME BACK HERE!!!!
                 """
                 objs['targets'].append(
                     Controller.get_pose_info(target_poses[min_targ_i]))
@@ -794,7 +789,7 @@ class Controller:
         self.current_scene_idx %= len(self.scenes)
         if self.current_scene_idx == 0:
             self.current_rearrangement += 1
-            self.current_rearrangement %= self.max_rearrangements
+            self.current_rearrangement %= self.shuffles_per_scene
 
         scene = self.scenes[self.current_scene_idx]
         data = self.data[scene][self.current_rearrangement]
@@ -901,19 +896,30 @@ class Controller:
                     # scene is messed up... openness is not meant to change
                     return 0
 
+            # non-moveable objects do not have bounding boxes
+            if init['bounding_box'] is None:
+                continue
+
             # iou without the agent doing anything
             expected_iou = Helpers.iou(
-                targ['bounding_box'], init['bounding_box'])
+                np.array(targ['bounding_box']), np.array(init['bounding_box']))
             pred_iou = Helpers.iou(
-                targ['bounding_box'], pred['bounding_box'])
+                np.array(targ['bounding_box']), np.array(pred['bounding_box']))
 
             # check the positional change
-            if expected_iou <= 0.5:
+            if expected_iou > 0.5:
                 # scene is messed up... obj not supposed to change positions
-                if pred_iou > 0.5:
+                if pred_iou <= 0.5:
                     return 0
             else:
                 # object position changes
                 cumulative_reward += 1 if pred_iou > 0.5 else 0
                 obj_change_count += 1
+        print(obj_change_count)
         return cumulative_reward / obj_change_count if obj_change_count else 0
+
+
+if __name__ == "__main__":
+    c = Controller(stage='train')
+    c.shuffle()
+    print(c.evaluate(*c.poses))
