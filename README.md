@@ -17,7 +17,7 @@
 
 # 📁 Files
 
-**main.py 👈.** Provides a starting snippet to easily set up the task, utilizing _rearrange_config.py_. This is intended to be the only file you to modify.
+**main.py 👈.** Provides a starting snippet to easily set up the task, utilizing _rearrange_config.py_. This is intended to be the only file that you modify.
 
 **Static setup files👊.** These files help execute actions and load the scene:
 
