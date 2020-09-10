@@ -54,18 +54,18 @@ for i_episode in range(dataset_size):
     for t_step in range(1000):
         rgb_observation = controller.last_event.frame
 
-        ### START replace with your walkthrough action
+        # START replace with your walkthrough action
         controller.action_space.execute_random_action()
-        ### END replace with your action
+        # END replace with your action
 
     # unshuffle to recover the target configuration
     controller.shuffle()
     for t_step in range(1000):
         rgb_observation = controller.last_event.frame
 
-        ### START replace with your unshuffle action
+        # START replace with your unshuffle action
         controller.action_space.execute_random_action()
-        ### END replace with your action
+        # END replace with your action
 
     # evaluation
     score = controller.evaluate(*controller.poses)
