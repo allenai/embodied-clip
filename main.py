@@ -1,16 +1,25 @@
 from rearrange_config import Controller
 controller = Controller(stage='train')
-for i_episode in range(20):
-    # walkthrough
-    for t_step in range(500):
+dataset_size = len(controller.scenes) * controller.shuffles_per_scene
+
+for i_episode in range(dataset_size):
+    # walkthrough the target configuration
+    for t_step in range(1000):
         rgb_observation = controller.last_event.frame
+
+        ### START replace with your walkthrough action
         controller.action_space.execute_random_action()
+        ### END replace with your action
+
+    # unshuffle to recover the target configuration
     controller.shuffle()
-    # unshuffle
-    for t_step in range(500):
+    for t_step in range(1000):
         rgb_observation = controller.last_event.frame
+
+        ### START replace with your unshuffle action
         controller.action_space.execute_random_action()
-    # determine similarities
-    initial_poses, target_poses, predicted_poses = controller.poses
-    controller.evaluate(target_poses, predicted_poses)
-    controller.reset()
+        ### END replace with your action
+
+    # evaluation
+    score = controller.evaluate(*controller.poses)
+    controller.reset()  # prepare next episode
