@@ -14,7 +14,7 @@ REQUIRED_VERSION = '2.4.12'
 DATA_DIR = './data'
 ROTATE_STEP_DEGREES = 30
 MAX_HAND_METERS = 0.5
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 
 class BoundedFloat:
@@ -703,15 +703,16 @@ class Controller:
         initial_poses = sorted(self.initial_poses, key=lambda obj: obj['name'])
         target_poses = sorted(self.target_poses, key=lambda obj: obj['name'])
 
+        # TODO: come back here!
         if scene not in self.identical_objects:
-            print('in 1')
+            # print('in 1')
             return (
                 Helpers.get_pose_info(initial_poses),
                 Helpers.get_pose_info(target_poses),
                 Helpers.get_pose_info(predicted_objs),
             )
         else:
-            print('in 2')
+            # print('in 2')
             identical_names = self.identical_objects[scene]
             objs = {'targets': [], 'initial': [], 'predicted': []}
             duplicate_idxs = []
@@ -889,7 +890,7 @@ class Controller:
             if targ['openness'] is not None:
                 if abs(targ['openness'] - init['openness']) > 0.2:
                     # openness in the object is meant to change
-                    if abs(targ['openness'] - pred['openness']) > 0.2:
+                    if abs(targ['openness'] - pred['openness']) <= 0.2:
                         cumulative_reward += 1
                     obj_change_count += 1
                 elif abs(targ['openness'] - pred['openness']) > 0.2:
@@ -919,7 +920,34 @@ class Controller:
         return cumulative_reward / obj_change_count if obj_change_count else 0
 
 
+# TODO: remove this part when pushed.
 if __name__ == "__main__":
-    c = Controller(stage='train')
-    c.shuffle()
-    print(c.evaluate(*c.poses))
+    controller = Controller(stage='train')
+    dataset_size = len(controller.scenes) * controller.shuffles_per_scene
+
+    DEBUG_ITERS = 0
+
+    for i_episode in range(min(50, dataset_size)):
+        # walkthrough the target configuration
+        for t_step in range(DEBUG_ITERS):
+            rgb_observation = controller.last_event.frame
+
+            # START replace with your walkthrough action
+            controller.action_space.execute_random_action()
+            # END replace with your action
+
+        # unshuffle to recover the target configuration
+        controller.shuffle()
+        for t_step in range(DEBUG_ITERS):
+            rgb_observation = controller.last_event.frame
+
+            # START replace with your unshuffle action
+            controller.action_space.execute_random_action()
+            # END replace with your action
+
+        # evaluation
+        score = controller.evaluate(*controller.poses)
+        print(score)
+        controller.reset()  # prepare next episode
+
+        print()
