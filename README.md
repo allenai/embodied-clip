@@ -3,6 +3,7 @@
 # 📝 Task Description
 
 **Overview 🤖.** The task involves _rearranging and modifying objects_ randomly placed in a household. Here the agent:
+
 1. Walks-through the scene with the target objects configured.
 2. Resets to its starting position, but the object states around have changed.
 
@@ -11,9 +12,10 @@
 **Agent's goal ⛳.** The agent's goal is to _recover the initial configuration_ of the scene.
 
 **Key challenges 🦾.** Some of the key challenges of performing this task include:
-* Identifying which objects have changed.
-* Recalling the state of all objects.
-* Multi-step reasoning, where manipulating an object might require moving a blocking object.
+
+- Identifying which objects have changed.
+- Recalling the state of all objects.
+- Multi-step reasoning, where manipulating an object might require moving a blocking object.
 
 # 📁 Files
 
@@ -30,6 +32,7 @@
 ## 💻 Installation
 
 ```bash
+git clone https://github.com/allenai/unshuffle-ai2thor.git
 pip install ai2thor==2.4.12 scipy
 ```
 
@@ -39,43 +42,42 @@ pip install ai2thor==2.4.12 scipy
 
 **SciPy 🧑‍🔬.** We utilize SciPy for evaluation. It helps calculate the IoU between 3D bounding boxes.
 
-
-## ➰ Training and inference loop
+## ➰ Training loop
 
 **Lightweight setup ✨.** In the `main.py` file, you will find:
 
 ```python
-from rearrange_config import Controller
-controller = Controller(stage='train')
-dataset_size = len(controller.scenes) * controller.shuffles_per_scene
+from rearrange_config import Environment
+env = Environment(stage='train')
+dataset_size = len(env.scenes) * env.shuffles_per_scene
 
 for i_episode in range(dataset_size):
     # walkthrough the target configuration
     for t_step in range(1000):
-        rgb_observation = controller.last_event.frame
+        rgb_observation = env.last_event.frame
 
         # START replace with your walkthrough action
-        controller.action_space.execute_random_action()
-        # END replace with your action
+        env.action_space.execute_random_action()
+        # END replace with your walkthrough action
 
     # unshuffle to recover the target configuration
-    controller.shuffle()
+    env.shuffle()
     for t_step in range(1000):
-        rgb_observation = controller.last_event.frame
+        rgb_observation = env.last_event.frame
 
         # START replace with your unshuffle action
-        controller.action_space.execute_random_action()
-        # END replace with your action
+        env.action_space.execute_random_action()
+        # END replace with your unshuffle action
 
     # evaluation
-    score = controller.evaluate(*controller.poses)
-    controller.reset()  # prepare next episode
+    score = env.evaluate(*env.poses)
+    env.reset()  # prepare next episode
 ```
 
-**Validation data 👏.** To use the validation data, initialize the controller with:
+**Validation data 👏.** To use the validation data, initialize the env with:
 
 ```python
-controller = Controller(stage='val')
+env = Environment(stage='val')
 ```
 
 ## 🎮 Action Space
@@ -83,13 +85,13 @@ controller = Controller(stage='val')
 **Action space property 🌜.** Both the _walkthrough_ and the _unshuffling_ phases have their own `ActionSpace` accessible with:
 
 ```python
-controller.action_space
+env.action_space
 ```
 
-**Walkthrough ActionSpace 🚶.** If the controller is currently in the walkthrough phase (i.e., shuffle has not yet been called on the episode), then the action space will consist of:
-
+**Walkthrough ActionSpace 🚶.** If the env is currently in the walkthrough phase (i.e., shuffle has not yet been called on the episode), then the action space will consist of:
 
 ☝️ 👈 👉 👇 ↩️ ↪️ 🧍 🧎 🙄 😔 ✅
+
 ```python
 ActionSpace(
   # move the agent by 0.25 meters
@@ -115,9 +117,10 @@ ActionSpace(
 )
 ```
 
-**Unshuffling ActionSpace 👷.** If the controller is currently in the unshuffling phase, then the action space will consist of several additional _interactible_ actions:
+**Unshuffling ActionSpace 👷.** If the env is currently in the unshuffling phase, then the action space will consist of several additional _interactible_ actions:
 
 ☝️ 👈 👉 👇 ↩️ ↪️ 🧍 🧎 🙄 😔 ✅&nbsp;&nbsp;&nbsp; 🔓 🏋️ 📌 ✋ 👋 💧
+
 ```python
 ActionSpace(
   # move the agent by 0.25 meters
@@ -181,14 +184,14 @@ ActionSpace(
 **Random actions 👻.** Demonstrated in `main.py`, randomly execute actions in the action space with:
 
 ```python
-controller.action_space.execute_random_action()
+env.action_space.execute_random_action()
 ```
 
-**Specific actions 🕵️.** Actions can be executed by calling the action from the controller, as in:
+**Specific actions 🕵️.** Actions can be executed by calling the action from the env, as in:
 
 ```python
-controller.move_ahead()
-controller.pickup_object(x=0.64, y=0.40)
+env.move_ahead()
+env.pickup_object(x=0.64, y=0.40)
 ```
 
 ## 🪑 Object Poses
@@ -196,7 +199,7 @@ controller.pickup_object(x=0.64, y=0.40)
 **Accessing object poses 🧘.** After the agent is done both the walkthrough and reshuffling phase, it can access the poses of each object with:
 
 ```python
-initial_poses, target_poses, predicted_poses = controller.poses
+initial_poses, target_poses, predicted_poses = env.poses
 ```
 
 **Reading an object's pose 📖.** Here, `initial_poses`, `target_poses`, and `predicted_poses` evaluate to a _list of dictionaries_ and are defined as:
@@ -241,7 +244,7 @@ Each dictionary is an _object's pose_ in the following form:
 **Evaluation function 😊 😑 ☹️.** To evaluate a single episode call:
 
 ```python
-episode_score = controller.evaluate(
+episode_score = env.evaluate(
     initial_poses,
     target_poses,
     predicted_poses)
