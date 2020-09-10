@@ -7,7 +7,7 @@
 1. Walks-through the scene with the target objects configured.
 2. Resets to its starting position, but the object states around have changed.
 
-> Changes to an object's state may include changes to its position, rotation or openness.
+> Changes to an object's state may include changes to its position, rotation, or openness.
 
 **Agent's goal ⛳.** The agent's goal is to _recover the initial configuration_ of the scene.
 
