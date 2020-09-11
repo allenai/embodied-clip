@@ -801,8 +801,8 @@ class Environment:
         :scene_idx (string) iTHOR scene name.
         :rearrangement_idx (int, min=0, max=49) rearrangement setup instance
         from the dataset.
-        """
 
+        """
         if scene is None:
             # iterate to the next scene
             self.current_scene_idx += 1
@@ -817,7 +817,7 @@ class Environment:
                                           rearrangement_idx else 0)
             self.current_scene_idx = [i for i in range(
                 len(self.scenes)) if self.scenes[i] == scene][0]
-            self.current_rearrangement = rearrangement_idx
+            self.current_rearrangement = rearrangement_idx  # type: ignore
 
         data = self.data[scene][self.current_rearrangement]
         self.controller.reset(scene)
