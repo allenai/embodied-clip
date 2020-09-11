@@ -2,12 +2,12 @@
 
 # 📝 Task Description
 
-**Overview 🤖.** The task involves _rearranging and modifying objects_ randomly placed in a household. Here the agent:
+**Overview 🤖.** The task involves rearranging and modifying objects randomly placed in a household. Here. the agent:
 
 1. Walks-through the scene with the target objects configured.
 2. Resets to its starting position, but the object states around have changed.
 
-> Changes to an object's state may include changes to its position, rotation or openness.
+> Changes to an object's state may include changes to its position, rotation, or openness.
 
 **Agent's goal ⛳.** The agent's goal is to _recover the initial configuration_ of the scene.
 
