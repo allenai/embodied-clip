@@ -310,7 +310,7 @@ class Environment:
 
         # for identical pickupable objects, the predicted objects are
         # re-assigned so as to minimize the distance between the predicted
-        # object position and the target object position.
+        # object position and the goal object position.
         self.identical_objects = {
             'FloorPlan18': {'Vase_42af4a87', 'Vase_bb6f5e2d', 'Vase_6d83d1f7'},
             'FloorPlan21': {
@@ -697,7 +697,7 @@ class Environment:
 
     @property
     def poses(self):
-        """Return (initial, target, predicted) pose of the scenes's objects."""
+        """Return (initial, goal, predicted) pose of the scenes's objects."""
         # access cached object poses
         scene = self.scenes[self.current_scene_idx]
 
@@ -708,30 +708,29 @@ class Environment:
         # sorts the object order
         predicted_objs = sorted(predicted_objs, key=lambda obj: obj['name'])
         initial_poses = sorted(self.initial_poses, key=lambda obj: obj['name'])
-        target_poses = sorted(self.target_poses, key=lambda obj: obj['name'])
+        goal_poses = sorted(self.goal_poses, key=lambda obj: obj['name'])
 
         # TODO: come back here!
         if scene not in self.identical_objects:
             # print('in 1')
             return (
                 Helpers.get_pose_info(initial_poses),
-                Helpers.get_pose_info(target_poses),
+                Helpers.get_pose_info(goal_poses),
                 Helpers.get_pose_info(predicted_objs),
             )
         else:
             # print('in 2')
             identical_names = self.identical_objects[scene]
-            objs = {'targets': [], 'initial': [], 'predicted': []}
+            objs = {'goal': [], 'initial': [], 'predicted': []}
             duplicate_idxs = []
             for i in range(len(predicted_objs)):
-                # initial, target, and predicted names are in the same order
+                # initial, goal, and predicted names are in the same order
                 # because each of them are sorted by the same names.
-                # initial and target were sorted upon caching.
                 name = initial_poses[i]['name']
 
                 if name not in identical_names:
-                    objs['targets'].append(
-                        Helpers.get_pose_info(target_poses[i]))
+                    objs['goal'].append(
+                        Helpers.get_pose_info(goal_poses[i]))
                     objs['initial'].append(
                         Helpers.get_pose_info(initial_poses[i]))
                     objs['predicted'].append(
@@ -739,12 +738,12 @@ class Environment:
                 else:
                     duplicate_idxs.append(i)
 
-            # stores the distances from each duplicate target to each duplicate
+            # stores the distances from each duplicate goal to each duplicate
             # predicted object. FWIW, there's only max(3) duplicate pickupable
             # objects, so this is quite fast.
             distances = defaultdict(dict)
             for targ_i in duplicate_idxs:
-                targ_obj = target_poses[targ_i]
+                targ_obj = goal_poses[targ_i]
                 for pred_i in duplicate_idxs:
                     pred_obj = predicted_objs[pred_i]
                     dist = Helpers.l2_distance(pred_obj, targ_obj)
@@ -772,11 +771,11 @@ class Environment:
                 print(distances)
                 print(pred_idxs_left)
 
-                # target idx / initial idx are in sync
+                # goal idx / initial idx are in sync
                 # TODO: COME BACK HERE!!!!
                 """
-                objs['targets'].append(
-                    Controller.get_pose_info(target_poses[min_targ_i]))
+                objs['goal'].append(
+                    Controller.get_pose_info(goal_poses[min_targ_i]))
                 objs['initial'].append(
                     Controller.get_pose_info(initial_poses[min_targ_i]))
 
@@ -789,12 +788,12 @@ class Environment:
                 pred_idxs_left.remove(min_pred_i)
                 del distances[min_targ_i]
 
-            return (objs['initial'], objs['targets'], objs['predicted'])
+            return (objs['initial'], objs['goal'], objs['predicted'])
 
     def reset(self,
               scene: Optional[str] = None,
               rearrangement_idx: Optional[int] = None) -> None:
-        """Arrange the next target data for the walkthrough phase.
+        """Arrange the next goal data for the walkthrough phase.
 
         -----
         Attribues
@@ -842,7 +841,7 @@ class Environment:
         self.controller.step(
             'SetObjectPoses', objectPoses=data['target_poses'])
         self.shuffle_called = False
-        self.target_poses = self._last_event.metadata['objects']
+        self.goal_poses = self._last_event.metadata['objects']
 
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
@@ -863,7 +862,7 @@ class Environment:
                 moveMagnitude=obj['start_openness'],
                 forceAction=True)
 
-        # arrange target poses for pickupable objects
+        # arrange initial poses for pickupable objects
         self.controller.step(
             'SetObjectPoses', objectPoses=data['starting_poses'])
         self.shuffle_called = True
@@ -871,14 +870,14 @@ class Environment:
 
     def evaluate(self,
                  initial_poses: List[Dict[str, Any]],
-                 target_poses: List[Dict[str, Any]],
+                 goal_poses: List[Dict[str, Any]],
                  predicted_poses: List[Dict[str, Any]]) -> float:
         """Evaluate the current episode's object poses.
 
         -----
         Attribues
         :initial_poses (List[Dict[str, Any]]) starting poses after shuffle.
-        :target_poses (List[Dict[str, Any]]) starting poses after reset.
+        :goal_poses (List[Dict[str, Any]]) starting poses after reset.
         :predicted_poses (List[Dict[str, Any]]) poses after the agent's
             unshuffling phase.
 
@@ -890,21 +889,21 @@ class Environment:
         3. Otherwise return the average number of successfully unshuffled
            objects.
 
-        For steps 2 and 3, an object is considered in-place/unshuffled if it
-        satisfies all of the following:
+        For steps 2 and 3, a predicted object is considered successfully
+        in-place/unshuffled if it satisfies both of the following:
 
-        1. Openness. It's openness between its target pose and predicted pose
-           is off by less than 20 degrees. The openness check is only applied
-           to objects that can open.
-        2. Position and Rotation. The object's 3D bounding box from its target
+        1. Openness. The openness between its goal pose and predicted pose is
+           off by less than 20 percent. The openness check is only applied to
+           objects that can open.
+        2. Position and Rotation. The object’s 3D bounding box from its goal
            pose and the predicted pose must have an IoU over 0.5. The
-           positional check is only relevant to object's that can move.
+           positional check is only relevant to object’s that can move.
         """
         cumulative_reward = 0
         obj_change_count = 0
 
         for obj_i in range(len(initial_poses)):
-            targ = target_poses[obj_i]
+            targ = goal_poses[obj_i]
             init = initial_poses[obj_i]
             pred = predicted_poses[obj_i]
 
