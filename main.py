@@ -1,27 +1,27 @@
 """Training and inference loop for the AI2-THOR object rearrangement task."""
 
-from rearrange_config import Controller
-controller = Controller(stage='train')
-dataset_size = len(controller.scenes) * controller.shuffles_per_scene
+from rearrange_config import Environment
+env = Environment(stage='train')
+dataset_size = len(env.scenes) * env.shuffles_per_scene
 
 for i_episode in range(dataset_size):
     # walkthrough the target configuration
     for t_step in range(1000):
-        rgb_observation = controller.last_event.frame
+        rgb_observation = env.last_event.frame
 
         # START replace with your walkthrough action
-        controller.action_space.execute_random_action()
-        # END replace with your action
+        env.action_space.execute_random_action()
+        # END replace with your walkthrough action
 
     # unshuffle to recover the target configuration
-    controller.shuffle()
+    env.shuffle()
     for t_step in range(1000):
-        rgb_observation = controller.last_event.frame
+        rgb_observation = env.last_event.frame
 
         # START replace with your unshuffle action
-        controller.action_space.execute_random_action()
-        # END replace with your action
+        env.action_space.execute_random_action()
+        # END replace with your unshuffle action
 
     # evaluation
-    score = controller.evaluate(*controller.poses)
-    controller.reset()  # prepare next episode
+    score = env.evaluate(*env.poses)
+    env.reset()  # prepare next episode
