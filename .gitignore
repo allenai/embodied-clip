@@ -2,6 +2,9 @@
 rearrange_venv/
 data/test.json
 debug/
+_corrections.py
+_generate*
+rewrite*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

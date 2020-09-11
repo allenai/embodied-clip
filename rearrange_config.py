@@ -2,7 +2,7 @@
 
 import ai2thor.controller
 from collections import defaultdict
-from typing import Dict, Callable, Tuple, Any, Union, List
+from typing import Dict, Callable, Tuple, Any, Union, List, Optional
 from scipy.spatial import ConvexHull, Delaunay
 import numpy as np
 import random
@@ -14,7 +14,7 @@ REQUIRED_VERSION = '2.4.12'
 DATA_DIR = './data'
 ROTATE_STEP_DEGREES = 30
 MAX_HAND_METERS = 0.5
-# logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
 
 class BoundedFloat:
@@ -63,6 +63,7 @@ class ActionSpace:
         },
         where the action variables are in the value and the callable function
         is the key.
+
         """
         self.keys = list(actions.keys())
         self.actions = actions
@@ -256,7 +257,7 @@ class Helpers:
         return intersection / union if union else 0
 
 
-class Controller:
+class Environment:
     """Custom AI2-THOR Controller for the task of object unshuffling."""
 
     def __init__(
@@ -271,6 +272,7 @@ class Controller:
         :stage (str) = {'train', 'val'}.
         :camera_pixel_width (int) width of the images from the agent.
         :camera_pixel_height (int) height of the images from the agent.
+
         """
         if ai2thor.__version__ != REQUIRED_VERSION:
             raise ValueError(f'Please use AI2-THOR v{REQUIRED_VERSION}')
@@ -300,7 +302,8 @@ class Controller:
         self.controller = ai2thor.controller.Controller(
             rotateStepDegrees=ROTATE_STEP_DEGREES,
             width=camera_pixel_width,
-            height=camera_pixel_height)
+            height=camera_pixel_height,
+            renderDepthImage=True)
 
         # always begin in walkthrough phase
         self.shuffle_called = False
@@ -323,6 +326,11 @@ class Controller:
 
         # sets up the starting walkthrough
         self.reset()
+
+    @property
+    def observation(self):
+        """TODO add scales."""
+        return self._last_event.frame, self._last_event.depth_frame
 
     @property
     def action_space(self) -> ActionSpace:
@@ -391,6 +399,7 @@ class Controller:
         Return (bool) if the action is successful. The action will not
         be successful if the specified openness would cause a collision
         or if the object at x/y is not openable.
+
         """
         # openness = 0 actually means fully open under the hood! -- weird...
         openness = openness + 0.001 if openness == 0 else openness
@@ -417,6 +426,7 @@ class Controller:
         ---
         Return (bool) if the action is successful. The action will not be
         successful if the object at x/y is not pickupable.
+
         """
         return Helpers.execute_action(
             controller=self.controller,
@@ -456,6 +466,7 @@ class Controller:
         ---
         Return (bool) if the action is successful. The action will not be
         successful if the object at x/y is not pickupable.
+
         """
         return Helpers.execute_action(
             controller=self.controller,
@@ -580,18 +591,16 @@ class Controller:
             action_fn=self.look_down,
             thor_action='LookDown')
 
-    def done(self) -> bool:
+    def done(self) -> None:
         """Agent's signal that it's completed its current rearrangement phase.
 
         Note that we do not automatically switch from the walkthrough phase
         to the unshuffling phase, and vice-versa, that is up to the user.
         This allows users to call .poses after the agent calls done, and
         have it correspond to the current episode.
-
-        Return (bool) if the action is successful. In this case, it will always
-        be True.
         """
-        return Helpers.execute_action(
+        self.agent_signals_done = True
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.done,
@@ -601,7 +610,7 @@ class Controller:
             self,
             x_meters: float,
             y_meters: float,
-            z_meters: float) -> bool:
+            z_meters: float) -> None:
         """Move the object in the agent's hand by the specified amount.
 
         -----
@@ -623,9 +632,9 @@ class Controller:
         and ends with controller.reset().
 
         -----
-        Return (bool) if the action is successful, which is True in the case
-        that the agent is holding an object and moving the object by the
-        specified amount does not bump into an object.
+        The action is successful in the case that the agent is holding an
+        object and moving the object by the specified amount does not bump
+        into an object.
         """
         mag = (x_meters ** 2 + y_meters ** 2 + z_meters ** 2) ** (0.5)
 
@@ -635,7 +644,7 @@ class Controller:
             y_meters /= (mag / MAX_HAND_METERS)
             z_meters /= (mag / MAX_HAND_METERS)
 
-        return Helpers.execute_action(
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.move_held_object,
@@ -648,7 +657,7 @@ class Controller:
             self,
             x_degrees: float,
             y_degrees: float,
-            z_degrees: float) -> bool:
+            z_degrees: float) -> None:
         """Rotate the object in the agent's hand by the specified degrees.
 
         -----
@@ -658,10 +667,9 @@ class Controller:
         :z_degrees (float, min=-90, max=90) rotation degrees along the z-axis.
 
         -----
-        Return (bool) if the action is successful, which is True in the case
-        that the agent is holding an object.
+        The action is only successful agent is holding an object.
         """
-        return Helpers.execute_action(
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.rotate_held_object,
@@ -670,21 +678,20 @@ class Controller:
                 'x_degrees': 'x', 'y_degrees': 'y', 'z_degrees': 'z'},
             x_degrees=x_degrees, y_degrees=y_degrees, z_degrees=z_degrees)
 
-    def drop_held_object(self) -> bool:
+    def drop_held_object(self) -> None:
         """Drop the object in the agent's hand.
 
         -----
-        Return (bool) if the action is successful, which would would only
-        occur if the agent is holding an object.
+        The action is only successful agent is holding an object.
         """
-        return Helpers.execute_action(
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.drop_held_object,
             thor_action='DropHandObject')
 
     @property
-    def last_event(self):
+    def _last_event(self):
         """Return the AI2-THOR Event from the most recent controller action."""
         return self.controller.last_event
 
@@ -696,7 +703,7 @@ class Controller:
 
         if not self.shuffle_called:
             raise Exception('shuffle() must be called before accessing poses')
-        predicted_objs = self.controller.last_event.metadata['objects']
+        predicted_objs = self.controller._last_event.metadata['objects']
 
         # sorts the object order
         predicted_objs = sorted(predicted_objs, key=lambda obj: obj['name'])
@@ -784,15 +791,34 @@ class Controller:
 
             return (objs['initial'], objs['targets'], objs['predicted'])
 
-    def reset(self):
-        """Arrange the next target data for the walkthrough phase."""
-        self.current_scene_idx += 1
-        self.current_scene_idx %= len(self.scenes)
-        if self.current_scene_idx == 0:
-            self.current_rearrangement += 1
-            self.current_rearrangement %= self.shuffles_per_scene
+    def reset(self,
+              scene: Optional[str] = None,
+              rearrangement_idx: Optional[int] = None) -> None:
+        """Arrange the next target data for the walkthrough phase.
 
-        scene = self.scenes[self.current_scene_idx]
+        -----
+        Attribues
+        :scene_idx (string) iTHOR scene name.
+        :rearrangement_idx (int, min=0, max=49) rearrangement setup instance
+        from the dataset.
+        """
+
+        if scene is None:
+            # iterate to the next scene
+            self.current_scene_idx += 1
+            self.current_scene_idx %= len(self.scenes)
+            if self.current_scene_idx == 0:
+                self.current_rearrangement += 1
+                self.current_rearrangement %= self.shuffles_per_scene
+            scene = self.scenes[self.current_scene_idx]
+        else:
+            # user specifies a scene
+            self.current_rearrangement = (rearrangement_idx if
+                                          rearrangement_idx else 0)
+            self.current_scene_idx = [i for i in range(
+                len(self.scenes)) if self.scenes[i] == scene][0]
+            self.current_rearrangement = rearrangement_idx
+
         data = self.data[scene][self.current_rearrangement]
         self.controller.reset(scene)
 
@@ -804,7 +830,7 @@ class Controller:
         # open objects
         for obj in data['openable_data']:
             # id is re-found due to possible floating point errors
-            id = [l_obj for l_obj in self.last_event.metadata['objects'] if
+            id = [l_obj for l_obj in self._last_event.metadata['objects'] if
                   l_obj['name'] == obj['name']][0]['objectId']
             self.controller.step(
                 action='OpenObject',
@@ -816,7 +842,7 @@ class Controller:
         self.controller.step(
             'SetObjectPoses', objectPoses=data['target_poses'])
         self.shuffle_called = False
-        self.target_poses = self.last_event.metadata['objects']
+        self.target_poses = self._last_event.metadata['objects']
 
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
@@ -841,7 +867,7 @@ class Controller:
         self.controller.step(
             'SetObjectPoses', objectPoses=data['starting_poses'])
         self.shuffle_called = True
-        self.initial_poses = self.last_event.metadata['objects']
+        self.initial_poses = self._last_event.metadata['objects']
 
     def evaluate(self,
                  initial_poses: List[Dict[str, Any]],
@@ -916,38 +942,4 @@ class Controller:
                 # object position changes
                 cumulative_reward += 1 if pred_iou > 0.5 else 0
                 obj_change_count += 1
-        print(obj_change_count)
         return cumulative_reward / obj_change_count if obj_change_count else 0
-
-
-# TODO: remove this part when pushed.
-if __name__ == "__main__":
-    controller = Controller(stage='train')
-    dataset_size = len(controller.scenes) * controller.shuffles_per_scene
-
-    DEBUG_ITERS = 0
-
-    for i_episode in range(min(50, dataset_size)):
-        # walkthrough the target configuration
-        for t_step in range(DEBUG_ITERS):
-            rgb_observation = controller.last_event.frame
-
-            # START replace with your walkthrough action
-            controller.action_space.execute_random_action()
-            # END replace with your action
-
-        # unshuffle to recover the target configuration
-        controller.shuffle()
-        for t_step in range(DEBUG_ITERS):
-            rgb_observation = controller.last_event.frame
-
-            # START replace with your unshuffle action
-            controller.action_space.execute_random_action()
-            # END replace with your action
-
-        # evaluation
-        score = controller.evaluate(*controller.poses)
-        print(score)
-        controller.reset()  # prepare next episode
-
-        print()
