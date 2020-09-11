@@ -5,22 +5,30 @@ env = Environment(stage='train')
 dataset_size = len(env.scenes) * env.shuffles_per_scene
 
 for i_episode in range(dataset_size):
-    # walkthrough the target configuration
+    # walkthrough the goal configuration
     for t_step in range(1000):
-        rgb_observation = env.last_event.frame
+        rgb, depth = env.observation
 
         # START replace with your walkthrough action
         env.action_space.execute_random_action()
         # END replace with your walkthrough action
 
-    # unshuffle to recover the target configuration
+        # only True if agent calls env.done()
+        if env.agent_signals_done:
+            break
+
+    # unshuffle to recover the goal configuration
     env.shuffle()
     for t_step in range(1000):
-        rgb_observation = env.last_event.frame
+        rgb, depth = env.observation
 
         # START replace with your unshuffle action
         env.action_space.execute_random_action()
         # END replace with your unshuffle action
+
+        # only True if agent calls env.done()
+        if env.agent_signals_done:
+            break
 
     # evaluation
     score = env.evaluate(*env.poses)

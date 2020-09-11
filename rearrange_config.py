@@ -703,7 +703,7 @@ class Environment:
 
         if not self.shuffle_called:
             raise Exception('shuffle() must be called before accessing poses')
-        predicted_objs = self.controller._last_event.metadata['objects']
+        predicted_objs = self.controller.last_event.metadata['objects']
 
         # sorts the object order
         predicted_objs = sorted(predicted_objs, key=lambda obj: obj['name'])
@@ -842,6 +842,7 @@ class Environment:
             'SetObjectPoses', objectPoses=data['target_poses'])
         self.shuffle_called = False
         self.goal_poses = self._last_event.metadata['objects']
+        self.agent_signals_done = False
 
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
@@ -867,6 +868,7 @@ class Environment:
             'SetObjectPoses', objectPoses=data['starting_poses'])
         self.shuffle_called = True
         self.initial_poses = self._last_event.metadata['objects']
+        self.agent_signals_done = False
 
     def evaluate(self,
                  initial_poses: List[Dict[str, Any]],
