@@ -280,31 +280,31 @@ class Environment:
             data_path = os.path.join(DATA_DIR, 'val.json')
 
         with open(data_path, 'r') as f:
-            self.data = json.loads(f.read())
+            self._data = json.loads(f.read())
 
-        self.scenes = list(self.data.keys())
+        self.scenes = list(self._data.keys())
         if not self.scenes:
             raise ValueError('The scenes are not listed as keys in the json!')
-        self.current_scene_idx = -1
+        self._current_scene_idx = -1
 
         # assumes the same number of rearrangements per scene
         self.current_rearrangement = -1
-        self.shuffles_per_scene = len(list(self.data.values())[0])
+        self.shuffles_per_scene = len(list(self._data.values())[0])
 
         # local thor controller to execute all the actions
-        self.controller = ai2thor.controller.Controller(
+        self._controller = ai2thor.controller.Controller(
             rotateStepDegrees=ROTATE_STEP_DEGREES,
             width=camera_pixel_width,
             height=camera_pixel_height,
             renderDepthImage=True)
 
         # always begin in walkthrough phase
-        self.shuffle_called = False
+        self._shuffle_called = False
 
         # for identical pickupable objects, the predicted objects are
         # re-assigned so as to minimize the distance between the predicted
         # object position and the goal object position.
-        self.identical_objects = {
+        self._identical_objects = {
             'FloorPlan18': {'Vase_42af4a87', 'Vase_bb6f5e2d', 'Vase_6d83d1f7'},
             'FloorPlan21': {
                 'AluminumFoil_6f4f0160',
@@ -343,7 +343,7 @@ class Environment:
             self.done: {}
         }
 
-        if self.shuffle_called:
+        if self._shuffle_called:
             # shuffle allowed actions
             actions.update({
                 self.open_object: {
@@ -405,13 +405,13 @@ class Environment:
         # it's openness without first closing it. So we simply try to first
         # close the object before reopening it.
         objs_1 = self._last_event.metadata['objects']
-        close_event = self.controller.step('CloseObject', x=x, y=y)
+        close_event = self._controller.step('CloseObject', x=x, y=y)
 
         # True if the object is likely already closed, or (x, y) doesn't map to
         # an openable object.
         if not close_event.metadata['lastActionSuccess']:
             Helpers.execute_action(
-                controller=self.controller,
+                controller=self._controller,
                 action_space=self.action_space,
                 action_fn=self.open_object,
                 thor_action='OpenObject',
@@ -431,7 +431,7 @@ class Environment:
                 logging.warn('Unexpected open object behavior!\n' +
                              'Please report an issue :)')
 
-            self.controller.step(
+            self._controller.step(
                 'OpenObject', moveMagnitude=openness,
                 objectId=closed_object_id)
 
@@ -451,7 +451,7 @@ class Environment:
 
         """
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.pickup_object,
             thor_action='PickupObject',
@@ -491,7 +491,7 @@ class Environment:
         """
         # TODO: did I rename these?
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.push_object,
             thor_action='TouchThenApplyForce',
@@ -506,7 +506,7 @@ class Environment:
     def move_ahead(self) -> None:
         """Move the agent ahead from its facing direction by 0.25 meters."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.move_ahead,
             thor_action='MoveAhead')
@@ -514,7 +514,7 @@ class Environment:
     def move_back(self) -> None:
         """Move the agent back from its facing direction by 0.25 meters."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.move_back,
             thor_action='MoveBack')
@@ -522,7 +522,7 @@ class Environment:
     def move_right(self) -> None:
         """Move the agent right from its facing direction by 0.25 meters."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.move_right,
             thor_action='MoveRight')
@@ -530,7 +530,7 @@ class Environment:
     def move_left(self) -> None:
         """Move the agent left from its facing direction by 0.25 meters."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.move_left,
             thor_action='MoveLeft')
@@ -538,7 +538,7 @@ class Environment:
     def rotate_left(self) -> None:
         """Rotate the agent left from its facing direction by 30 degrees."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.rotate_left,
             thor_action='RotateLeft')
@@ -546,7 +546,7 @@ class Environment:
     def rotate_right(self) -> None:
         """Rotate the agent left from its facing direction by 30 degrees."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.rotate_right,
             thor_action='RotateRight')
@@ -554,7 +554,7 @@ class Environment:
     def stand(self) -> None:
         """Stand the agent from the crouching position."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.stand,
             thor_action='Stand')
@@ -562,7 +562,7 @@ class Environment:
     def crouch(self) -> None:
         """Crouch the agent from the standing position."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.crouch,
             thor_action='Crouch')
@@ -570,7 +570,7 @@ class Environment:
     def look_up(self) -> None:
         """Turn the agent's head and camera up by 30 degrees."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.look_up,
             thor_action='LookUp')
@@ -578,7 +578,7 @@ class Environment:
     def look_down(self) -> None:
         """Turn the agent's head and camera down by 30 degrees."""
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.look_down,
             thor_action='LookDown')
@@ -593,7 +593,7 @@ class Environment:
         """
         self.agent_signals_done = True
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.done,
             thor_action='Done')
@@ -637,7 +637,7 @@ class Environment:
             z_meters /= (mag / MAX_HAND_METERS)
 
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.move_held_object,
             thor_action='MoveHandDelta',
@@ -662,7 +662,7 @@ class Environment:
         The action is only successful agent is holding an object.
         """
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.rotate_held_object,
             thor_action='RotateHand',
@@ -677,33 +677,39 @@ class Environment:
         The action is only successful agent is holding an object.
         """
         Helpers.execute_action(
-            controller=self.controller,
+            controller=self._controller,
             action_space=self.action_space,
             action_fn=self.drop_held_object,
             thor_action='DropHandObject')
 
     @property
-    def _last_event(self):
+    def _last_event(self) -> ai2thor.server.Event:
         """Return the AI2-THOR Event from the most recent controller action."""
-        return self.controller.last_event
+        return self._controller.last_event
+
+    @property
+    def scene(self) -> str:
+        """Return the current scene name."""
+        return self.scenes[self._current_scene_idx]
 
     @property
     def poses(self):
         """Return (initial, goal, predicted) pose of the scenes's objects."""
         # access cached object poses
-        scene = self.scenes[self.current_scene_idx]
+        scene = self.scenes[self._current_scene_idx]
 
-        if not self.shuffle_called:
+        if not self._shuffle_called:
             raise Exception('shuffle() must be called before accessing poses')
-        predicted_objs = self.controller.last_event.metadata['objects']
+        predicted_objs = self._controller.last_event.metadata['objects']
 
         # sorts the object order
         predicted_objs = sorted(predicted_objs, key=lambda obj: obj['name'])
-        initial_poses = sorted(self.initial_poses, key=lambda obj: obj['name'])
-        goal_poses = sorted(self.goal_poses, key=lambda obj: obj['name'])
+        initial_poses = sorted(self._initial_poses,
+                               key=lambda obj: obj['name'])
+        goal_poses = sorted(self._goal_poses, key=lambda obj: obj['name'])
 
         # TODO: come back here!
-        if scene not in self.identical_objects:
+        if scene not in self._identical_objects:
             # print('in 1')
             return (
                 Helpers.get_pose_info(initial_poses),
@@ -712,7 +718,7 @@ class Environment:
             )
         else:
             # print('in 2')
-            identical_names = self.identical_objects[scene]
+            identical_names = self._identical_objects[scene]
             objs = {'goal': [], 'initial': [], 'predicted': []}
             duplicate_idxs = []
             for i in range(len(predicted_objs)):
@@ -796,70 +802,70 @@ class Environment:
         """
         if scene is None:
             # iterate to the next scene
-            self.current_scene_idx += 1
-            self.current_scene_idx %= len(self.scenes)
-            if self.current_scene_idx == 0:
+            self._current_scene_idx += 1
+            self._current_scene_idx %= len(self.scenes)
+            if self._current_scene_idx == 0:
                 self.current_rearrangement += 1
                 self.current_rearrangement %= self.shuffles_per_scene
-            scene = self.scenes[self.current_scene_idx]
+            scene = self.scenes[self._current_scene_idx]
         else:
             # user specifies a scene
             self.current_rearrangement = (rearrangement_idx if
                                           rearrangement_idx else 0)
-            self.current_scene_idx = [i for i in range(
+            self._current_scene_idx = [i for i in range(
                 len(self.scenes)) if self.scenes[i] == scene][0]
             self.current_rearrangement = rearrangement_idx  # type: ignore
 
-        data = self.data[scene][self.current_rearrangement]
-        self.controller.reset(scene)
+        data = self._data[scene][self.current_rearrangement]
+        self._controller.reset(scene)
 
         # set agent position
         pos = data['agent_position']
         rot = {'x': 0, 'y': data['agent_rotation'], 'z': 0}
-        self.controller.step('TeleportFull', rotation=rot, **pos)
+        self._controller.step('TeleportFull', rotation=rot, **pos)
 
         # open objects
         for obj in data['openable_data']:
             # id is re-found due to possible floating point errors
             id = [l_obj for l_obj in self._last_event.metadata['objects'] if
                   l_obj['name'] == obj['name']][0]['objectId']
-            self.controller.step(
+            self._controller.step(
                 action='OpenObject',
                 objectId=id,
                 moveMagnitude=obj['target_openness'],
                 forceAction=True)
 
         # arrange target poses for pickupable objects
-        self.controller.step(
+        self._controller.step(
             'SetObjectPoses', objectPoses=data['target_poses'])
-        self.shuffle_called = False
-        self.goal_poses = self._last_event.metadata['objects']
+        self._shuffle_called = False
+        self._goal_poses = self._last_event.metadata['objects']
         self.agent_signals_done = False
 
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
         self.walkthrough_phase = False
-        scene = self.scenes[self.current_scene_idx]
-        data = self.data[scene][self.current_rearrangement]
-        self.controller.reset(scene)
+        scene = self.scenes[self._current_scene_idx]
+        data = self._data[scene][self.current_rearrangement]
+        self._controller.reset(scene)
 
         # set agent position
         pos = data['agent_position']
         rot = {'x': 0, 'y': data['agent_rotation'], 'z': 0}
-        self.controller.step('TeleportFull', rotation=rot, **pos)
+        self._controller.step('TeleportFull', rotation=rot, **pos)
 
         # open objects
         for obj in data['openable_data']:
-            self.controller.step(
+            self._controller.step(
                 action='OpenObject',
                 moveMagnitude=obj['start_openness'],
                 forceAction=True)
 
         # arrange initial poses for pickupable objects
-        self.controller.step(
+        self._controller.step(
             'SetObjectPoses', objectPoses=data['starting_poses'])
-        self.shuffle_called = True
-        self.initial_poses = self._last_event.metadata['objects']
+        self._shuffle_called = True
+        self._initial_poses = self._last_event.metadata['objects']
         self.agent_signals_done = False
 
     def evaluate(self,
@@ -896,6 +902,10 @@ class Environment:
         cumulative_reward = 0
         obj_change_count = 0
 
+        # note that this method also finds the object change count,
+        # so an immediate return of 0 doesn't suffice.
+        return_0 = False
+
         for obj_i in range(len(initial_poses)):
             targ = goal_poses[obj_i]
             init = initial_poses[obj_i]
@@ -903,7 +913,7 @@ class Environment:
 
             # no reward for breaking a non-broken starting object
             if pred['broken']:
-                return 0
+                return_0 = True
 
             # check if the object has openness
             if targ['openness'] is not None:
@@ -914,7 +924,7 @@ class Environment:
                     obj_change_count += 1
                 elif abs(targ['openness'] - pred['openness']) > 0.2:
                     # scene is messed up... openness is not meant to change
-                    return 0
+                    return_0 = True
 
             # non-moveable objects do not have bounding boxes
             if init['bounding_box'] is None:
@@ -930,9 +940,13 @@ class Environment:
             if expected_iou > 0.5:
                 # scene is messed up... obj not supposed to change positions
                 if pred_iou <= 0.5:
-                    return 0
+                    return_0 = True
             else:
                 # object position changes
                 cumulative_reward += 1 if pred_iou > 0.5 else 0
                 obj_change_count += 1
-        return cumulative_reward / obj_change_count if obj_change_count else 0
+        self.object_change_n = obj_change_count
+        return (
+            0 if return_0 else cumulative_reward / obj_change_count
+            if obj_change_count else 0
+        )
