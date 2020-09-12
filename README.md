@@ -87,9 +87,10 @@ For both the walkthrough and unshuffle phases, the agent only recieves RGB-D obs
 ```python
 rgb, depth = env.observation
 ```
-
-<img src="https://ai2thor.allenai.org/docs/assets/rearrangement/obs.png" alt="POV Agent Image" width="45%">
-<img src="https://ai2thor.allenai.org/docs/assets/rearrangement/depth.svg" alt="Depth Agent Image" width="54%">
+<p float="left">
+    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/obs.png" alt="POV Agent Image" width="45%">
+    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/depth.svg" alt="Depth Agent Image" width="54%">
+</p>
 
 **RGB image 📷.** The RGB image is a `300x300x3` NumPy array from the agent's eye-level camera. All values are stored as integers between `[0:255]`.
 
@@ -108,8 +109,6 @@ env.action_space
 ```
 The actions for the walkthrough 👀 phase and the unshuffling phase 🏋 are shown below.
 
-<hr class="bigHr">
-
 **1. Move ahead ☝.**
 
 ```python
@@ -117,8 +116,6 @@ env.move_ahead()
 ```
 
 Attempts to move the agent ahead by 0.25 meters.
-
-<hr class="bigHr">
 
 **2. Move left 👈️.**
 
@@ -128,8 +125,6 @@ env.move_left()
 
 Attempts to move the agent left by 0.25 meters.
 
-<hr class="bigHr">
-
 **3. Move right 👉.**
 
 ```python
@@ -137,8 +132,6 @@ env.move_right()
 ```
 
 Attempts to move the agent right by 0.25 meters.
-
-<hr class="bigHr">
 
 **4. Move back 👇.**
 
@@ -148,8 +141,6 @@ env.move_back()
 
 Attempts to move the agent back by 0.25 meters.
 
-<hr class="bigHr">
-
 **5. Rotate right ️↩️.**
 
 ```python
@@ -157,8 +148,6 @@ env.rotate_right()
 ```
 
 Attempts to rotate the agent right by 30 degrees.
-
-<hr class="bigHr">
 
 **6. Rotate left ↪️.**
 
@@ -168,8 +157,6 @@ env.rotate_left()
 
 Attempts to rotate the agent left by 30 degrees.
 
-<hr class="bigHr">
-
 **7. Stand 🧍.**
 
 ```python
@@ -177,8 +164,6 @@ env.stand()
 ```
 
 Attempts to stand the agent from a crouching position.
-
-<hr class="bigHr">
 
 **8. Crouch 🧎.**
 
@@ -188,8 +173,6 @@ env.crouch()
 
 Attempts to crouche the agent from a standing position.
 
-<hr class="bigHr">
-
 **9. Look up 🙄.**
 
 ```python
@@ -197,8 +180,6 @@ env.look_up()
 ```
 
 Attempts to rotate the agent’s head upward by 30 degrees. The maximum upward angle agent can look is 30 degrees.
-
-<hr class="bigHr">
 
 **10. Look down 😔.**
 
@@ -208,8 +189,6 @@ env.look_down()
 
 Attempts to rotate the agent’s head downward by 30 degrees. The maximum downward angle agent can look is 60 degrees.
 
-<hr class="bigHr">
-
 **11. Done ✅.**
 
 ```python
@@ -217,8 +196,6 @@ env.done()
 ```
 
 Agent’s signal that it has completed the current phase and is ready to move on. The result of this action is that `env.agent_signals_done` becomes `True`.
-
-<hr class="bigHr">
 
 **12. Open object 📖️.**
 
@@ -233,8 +210,6 @@ env.open_object(
 
 Attempts to open the object at [🎯Target Point](#-target-point) `(x, y)` to `openness` percent.
 
-<hr class="bigHr">
-
 **13. Pickup object 🏋.**
 
 > Unshuffle phase only.
@@ -246,8 +221,6 @@ env.pickup_object(
 ```
 
 Attempts to pick up the object at [🎯Target Point](#-target-point) `(x, y)`.
-
-<hr class="bigHr">
 
 **14. Push object 📌.**
 
@@ -265,8 +238,6 @@ env.push_object(
 
 Attempts to push the object at [🎯Target Point](#-target-point) `(x, y)`. Here, the relative forces (`rel_x_force`, `rel_y_force`, `rel_z_force`) provide the directional force vector. A `force_magnitude` of 1 corresponds to 50 newtons of force, which should be sufficient to reasonably move any pickupable object.
 
-<hr class="bigHr">
-
 **15. Move held object 👊.**
 
 > Unshuffle phase only.
@@ -282,8 +253,6 @@ Attempts to move the object in the agent's hand. Here, the `y` coordinate is up 
 
 > The maximum amount a hand will move in a single time step is 0.5 meters. If the specified L2 magnitude from all 3 directions is over this mark, the object will simply move 0.5 meters in the given direction.
 
-<hr class="bigHr">
-
 **16. Rotate held object 👋️.**
 
 > Unshuffle phase only.
@@ -296,8 +265,6 @@ env.rotate_held_object(
 ```
 
 Attempts to rotate the object in the agent's hand. Here, 0.5 corresponds to 90 degrees and -0.5 corresponds to -90 degrees.
-
-<hr class="bigHr">
 
 **17. Drop held object ✋.**
 
@@ -319,7 +286,7 @@ Interacting with an object requires targeting that object. We use `x` and `y` co
 
 The `x` and `y` coordinates correspond to the relative position of the target object along the horizontal and vertical image axes, respectively. An example of targeting 2 different pickupable objects in the same frame follows:
 
-<img src="/docs/assets/rearrangement/coordinates.svg" alt="Object Rearrangement Example" style="width: 100%; max-width: 400px;">
+<img src="https://ai2thor.allenai.org/docs/assets/rearrangement/coordinates.svg" alt="Object Rearrangement Example" width="50%">
 
 ### 👻 Random
 
