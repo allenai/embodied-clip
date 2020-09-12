@@ -192,10 +192,6 @@ class Helpers:
         if action not in action_space:
             raise ValueError(error_message)
 
-        if 'force_magnitude' in kwargs:
-            # rescale for newtons
-            kwargs['force_magnitude'] *= 50
-
         # get rid of bad variable names
         for better_kwarg, thor_kwarg in updated_kwarg_names.items():
             kwargs[thor_kwarg] = kwargs[better_kwarg]
@@ -420,6 +416,8 @@ class Environment:
                 updated_kwarg_names={'openness': 'moveMagnitude'},
                 x=x, y=y, openness=openness)
         else:
+            if not self._shuffle_called:
+                raise Exception('Must call env.shuffle() before opening.')
             objs_2 = self._last_event.metadata['objects']
 
             # find which object was opened
@@ -489,19 +487,27 @@ class Environment:
         The action will not be successful if the object at x/y is not moveable.
 
         """
-        # TODO: did I rename these?
-        Helpers.execute_action(
-            controller=self._controller,
-            action_space=self.action_space,
-            action_fn=self.push_object,
-            thor_action='TouchThenApplyForce',
-            error_message=(
-                'x/y must be in [0:1] and in unshuffle phase.\n' +
-                'rel_{x/y/z}_force must be in [-0.5:0.5].\n' +
-                'force_magnitude must be in [0:1].'),
-            default_thor_kwargs={'handDistance': 1.5},
-            x=x, y=y, rel_x_force=rel_x_force, rel_y_force=rel_y_force,
-            rel_z_force=rel_z_force, force_magnitude=force_magnitude)
+        if not self._shuffle_called:
+            raise Exception(
+                'Must be in unshuffle phase, i.e., call shuffle().')
+        if x > 1 or x < 0:
+            raise ValueError('x must be in [0:1]')
+        if y > 1 or y < 0:
+            raise ValueError('y must be in [0:1]')
+        if rel_x_force > 0.5 or rel_x_force < -0.5:
+            raise ValueError('rel_x_force must be in [-0.5:0.5]')
+        if rel_y_force > 0.5 or rel_y_force < -0.5:
+            raise ValueError('rel_y_force must be in [-0.5:0.5]')
+        if rel_z_force > 0.5 or rel_z_force < -0.5:
+            raise ValueError('rel_z_force must be in [-0.5:0.5]')
+        if force_magnitude > 1 or force_magnitude < 0:
+            raise ValueError('force_magnitude must be in [0:1]')
+
+        self._controller.step(
+            'TouchThenApplyForce', x=x, y=y, handDistance=1.5,
+            direction=dict(x=rel_x_force, y=rel_y_force, z=rel_z_force),
+            moveMagnitude=force_magnitude*50
+        )
 
     def move_ahead(self) -> None:
         """Move the agent ahead from its facing direction by 0.25 meters."""
@@ -696,8 +702,6 @@ class Environment:
     def poses(self):
         """Return (initial, goal, predicted) pose of the scenes's objects."""
         # access cached object poses
-        scene = self.scenes[self._current_scene_idx]
-
         if not self._shuffle_called:
             raise Exception('shuffle() must be called before accessing poses')
         predicted_objs = self._controller.last_event.metadata['objects']
@@ -709,7 +713,7 @@ class Environment:
         goal_poses = sorted(self._goal_poses, key=lambda obj: obj['name'])
 
         # TODO: come back here!
-        if scene not in self._identical_objects:
+        if self.scene not in self._identical_objects:
             # print('in 1')
             return (
                 Helpers.get_pose_info(initial_poses),
@@ -718,7 +722,7 @@ class Environment:
             )
         else:
             # print('in 2')
-            identical_names = self._identical_objects[scene]
+            identical_names = self._identical_objects[self.scene]
             objs = {'goal': [], 'initial': [], 'predicted': []}
             duplicate_idxs = []
             for i in range(len(predicted_objs)):
@@ -841,6 +845,7 @@ class Environment:
         self._shuffle_called = False
         self._goal_poses = self._last_event.metadata['objects']
         self.agent_signals_done = False
+        self._object_change_n: Optional[int] = None
 
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
@@ -867,6 +872,17 @@ class Environment:
         self._shuffle_called = True
         self._initial_poses = self._last_event.metadata['objects']
         self.agent_signals_done = False
+
+    @property
+    def object_change_n(self) -> int:
+        """Return the number of objects changed in the current scene.
+
+        Raises Exception if evaluate has not yet been called, after resetting
+        and shuffling the scene.
+        """
+        if self._object_change_n is None:
+            raise Exception('Please call evaluate first, then access.')
+        return self._object_change_n
 
     def evaluate(self,
                  initial_poses: List[Dict[str, Any]],
@@ -945,7 +961,7 @@ class Environment:
                 # object position changes
                 cumulative_reward += 1 if pred_iou > 0.5 else 0
                 obj_change_count += 1
-        self.object_change_n = obj_change_count
+        self._object_change_n = obj_change_count
         return (
             0 if return_0 else cumulative_reward / obj_change_count
             if obj_change_count else 0
