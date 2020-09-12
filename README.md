@@ -278,6 +278,8 @@ Drops the object in the hand of an agent, if the hand is holding an object.
 
 > Dropping some objects may cause them to break, which we consider a [failed unshuffling](#-evaluation).
 
+<br>
+
 ### 🎯 Target Point
 
 Interacting with an object requires targeting that object. We use `x` and `y` coordinates between [0:1] to target each object, based on the _last RGB image frame_ from the agent's camera.
