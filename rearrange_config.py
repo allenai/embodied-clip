@@ -317,8 +317,13 @@ class Environment:
         self.reset()
 
     @property
-    def observation(self):
-        """TODO add scales."""
+    def observation(self) -> Tuple[np.array, np.array]:
+        """Return the (RGB, depth) frames from the current observation.
+
+        :RGB frame is 300x300x3 with integer entries in [0:255].
+        :depth frame is 300x300 with unscaled entries representing the
+            meter distance from the agent to the pixel.
+        """
         return self._last_event.frame, self._last_event.depth_frame
 
     @property
