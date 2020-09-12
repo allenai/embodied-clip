@@ -68,11 +68,8 @@ class ActionSpace:
         self.keys = list(actions.keys())
         self.actions = actions
 
-    def execute_random_action(self, log_choice: bool = True) -> bool:
-        """Execute a random action within the specified action space.
-
-        Return (bool) if the action is executed successfully.
-        """
+    def execute_random_action(self, log_choice: bool = True) -> None:
+        """Execute a random action within the specified action space."""
         action = random.choice(self.keys)
         kwargs = {
             name: bounds.sample()
@@ -85,7 +82,7 @@ class ActionSpace:
             kwargs_str = '\n' + kwargs_str[:-2] if kwargs_str else ''
             logging.info(f'Executing {action.__name__}(' + kwargs_str + ')')
 
-        return action(**kwargs)
+        action(**kwargs)
 
     def __contains__(self, action: Tuple[Callable, Dict[str, float]]) -> bool:
         """Return if action_fn with variables is valid in this ActionSpace."""
@@ -260,22 +257,18 @@ class Helpers:
 class Environment:
     """Custom AI2-THOR Controller for the task of object unshuffling."""
 
-    def __init__(
-            self,
-            stage: str,
-            camera_pixel_width: int = 300,
-            camera_pixel_height: int = 300):
+    def __init__(self, stage: str):
         """Initialize a new rearrangement controller.
 
         -----
         Attributes
-        :stage (str) = {'train', 'val'}.
-        :camera_pixel_width (int) width of the images from the agent.
-        :camera_pixel_height (int) height of the images from the agent.
+        :stage (str) must be in {'train', 'val'}. (casing is ignored)
 
         """
         if ai2thor.__version__ != REQUIRED_VERSION:
             raise ValueError(f'Please use AI2-THOR v{REQUIRED_VERSION}')
+        camera_pixel_width: int = 300
+        camera_pixel_height: int = 300
 
         stage = stage.lower()
         if stage not in {'train', 'val'}:
@@ -385,7 +378,7 @@ class Environment:
 
         return ActionSpace(actions)
 
-    def open_object(self, x: float, y: float, openness: float) -> bool:
+    def open_object(self, x: float, y: float, openness: float) -> None:
         """Open the object corresponding to x/y to openess.
 
         -----
@@ -396,24 +389,53 @@ class Environment:
            that the target object is located.
 
         ---
-        Return (bool) if the action is successful. The action will not
-        be successful if the specified openness would cause a collision
-        or if the object at x/y is not openable.
+        The action will not be successful if the specified openness would
+        cause a collision or if the object at x/y is not openable.
 
         """
-        # openness = 0 actually means fully open under the hood! -- weird...
-        openness = openness + 0.001 if openness == 0 else openness
-        return Helpers.execute_action(
-            controller=self.controller,
-            action_space=self.action_space,
-            action_fn=self.open_object,
-            thor_action='OpenObject',
-            error_message=(
-                'x/y/openness must be in [0:1] and in unshuffle phase.'),
-            updated_kwarg_names={'openness': 'moveMagnitude'},
-            x=x, y=y, openness=openness)
+        if x < 0 or x > 1 or y < 0 or y > 1:
+            raise ValueError('x/y must be in [0:1].')
+        if openness < 0 or openness > 1:
+            raise ValueError('openness must be in [0:1]')
 
-    def pickup_object(self, x: float, y: float) -> bool:
+        # openness = 0 actually means fully open under the hood.
+        openness = openness + 0.001 if openness == 0 else openness
+
+        # If an object is already open, THOR doesn't support changing
+        # it's openness without first closing it. So we simply try to first
+        # close the object before reopening it.
+        objs_1 = self._last_event.metadata['objects']
+        close_event = self.controller.step('CloseObject', x=x, y=y)
+
+        # True if the object is likely already closed, or (x, y) doesn't map to
+        # an openable object.
+        if not close_event.metadata['lastActionSuccess']:
+            Helpers.execute_action(
+                controller=self.controller,
+                action_space=self.action_space,
+                action_fn=self.open_object,
+                thor_action='OpenObject',
+                error_message=(
+                    'x/y/openness must be in [0:1] and in unshuffle phase.'),
+                updated_kwarg_names={'openness': 'moveMagnitude'},
+                x=x, y=y, openness=openness)
+        else:
+            objs_2 = self._last_event.metadata['objects']
+
+            # find which object was opened
+            for i in range(len(objs_1)):
+                if objs_1[i]['isOpen'] ^ objs_2[i]['isOpen']:
+                    closed_object_id = objs_1[i]['objectId']
+                    break
+            else:
+                logging.warn('Unexpected open object behavior!\n' +
+                             'Please report an issue :)')
+
+            self.controller.step(
+                'OpenObject', moveMagnitude=openness,
+                objectId=closed_object_id)
+
+    def pickup_object(self, x: float, y: float) -> None:
         """Pick up the object corresponding to x/y.
 
         -----
@@ -424,11 +446,11 @@ class Environment:
            that the target object is located.
 
         ---
-        Return (bool) if the action is successful. The action will not be
-        successful if the object at x/y is not pickupable.
+        The action will not be successful if the object at x/y is not
+        pickupable.
 
         """
-        return Helpers.execute_action(
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.pickup_object,
@@ -443,7 +465,7 @@ class Environment:
             rel_x_force: float,
             rel_y_force: float,
             rel_z_force: float,
-            force_magnitude: float) -> bool:
+            force_magnitude: float) -> None:
         """Push an object along a surface.
 
         -----
@@ -464,11 +486,11 @@ class Environment:
            sufficiently move all pickupable objects.
 
         ---
-        Return (bool) if the action is successful. The action will not be
-        successful if the object at x/y is not pickupable.
+        The action will not be successful if the object at x/y is not moveable.
 
         """
-        return Helpers.execute_action(
+        # TODO: did I rename these?
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.push_object,
@@ -481,111 +503,81 @@ class Environment:
             x=x, y=y, rel_x_force=rel_x_force, rel_y_force=rel_y_force,
             rel_z_force=rel_z_force, force_magnitude=force_magnitude)
 
-    def move_ahead(self) -> bool:
-        """Move the agent ahead from its facing direction by 0.25 meters.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def move_ahead(self) -> None:
+        """Move the agent ahead from its facing direction by 0.25 meters."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.move_ahead,
             thor_action='MoveAhead')
 
-    def move_back(self) -> bool:
-        """Move the agent back from its facing direction by 0.25 meters.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def move_back(self) -> None:
+        """Move the agent back from its facing direction by 0.25 meters."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.move_back,
             thor_action='MoveBack')
 
-    def move_right(self) -> bool:
-        """Move the agent right from its facing direction by 0.25 meters.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def move_right(self) -> None:
+        """Move the agent right from its facing direction by 0.25 meters."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.move_right,
             thor_action='MoveRight')
 
-    def move_left(self) -> bool:
-        """Move the agent left from its facing direction by 0.25 meters.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def move_left(self) -> None:
+        """Move the agent left from its facing direction by 0.25 meters."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.move_left,
             thor_action='MoveLeft')
 
-    def rotate_left(self) -> bool:
-        """Rotate the agent left from its facing direction by 30 degrees.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def rotate_left(self) -> None:
+        """Rotate the agent left from its facing direction by 30 degrees."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.rotate_left,
             thor_action='RotateLeft')
 
-    def rotate_right(self) -> bool:
-        """Rotate the agent left from its facing direction by 30 degrees.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def rotate_right(self) -> None:
+        """Rotate the agent left from its facing direction by 30 degrees."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.rotate_right,
             thor_action='RotateRight')
 
-    def stand(self) -> bool:
-        """Stand the agent from the crouching position.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def stand(self) -> None:
+        """Stand the agent from the crouching position."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.stand,
             thor_action='Stand')
 
-    def crouch(self) -> bool:
-        """Crouch the agent from the standing position.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def crouch(self) -> None:
+        """Crouch the agent from the standing position."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.crouch,
             thor_action='Crouch')
 
-    def look_up(self) -> bool:
-        """Turn the agent's head and camera up by 30 degrees.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def look_up(self) -> None:
+        """Turn the agent's head and camera up by 30 degrees."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.look_up,
             thor_action='LookUp')
 
-    def look_down(self) -> bool:
-        """Turn the agent's head and camera down by 30 degrees.
-
-        Return (bool) if the last action was successful.
-        """
-        return Helpers.execute_action(
+    def look_down(self) -> None:
+        """Turn the agent's head and camera down by 30 degrees."""
+        Helpers.execute_action(
             controller=self.controller,
             action_space=self.action_space,
             action_fn=self.look_down,
@@ -749,7 +741,7 @@ class Environment:
                     dist = Helpers.l2_distance(pred_obj, targ_obj)
                     distances[targ_i][pred_i] = dist
 
-            print(distances)
+            # print(distances)
 
             # finds the one-to-one duplicate object correspondences
             pred_idxs_left = set(duplicate_idxs)
@@ -766,10 +758,10 @@ class Environment:
                             min_pred_i = pred_i
                             min_targ_i = targ_i
 
-                print('- ' * 3)
-                print(min_targ_i, min_pred_i, min_dist)
-                print(distances)
-                print(pred_idxs_left)
+                # print('- ' * 3)
+                # print(min_targ_i, min_pred_i, min_dist)
+                # print(distances)
+                # print(pred_idxs_left)
 
                 # goal idx / initial idx are in sync
                 # TODO: COME BACK HERE!!!!
