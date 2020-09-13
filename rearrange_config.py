@@ -717,16 +717,13 @@ class Environment:
                                key=lambda obj: obj['name'])
         goal_poses = sorted(self._goal_poses, key=lambda obj: obj['name'])
 
-        # TODO: come back here!
         if self.scene not in self._identical_objects:
-            # print('in 1')
             return (
                 Helpers.get_pose_info(initial_poses),
                 Helpers.get_pose_info(goal_poses),
                 Helpers.get_pose_info(predicted_objs),
             )
         else:
-            # print('in 2')
             identical_names = self._identical_objects[self.scene]
             objs = {'goal': [], 'initial': [], 'predicted': []}
             duplicate_idxs = []
@@ -756,8 +753,6 @@ class Environment:
                     dist = Helpers.l2_distance(pred_obj, targ_obj)
                     distances[targ_i][pred_i] = dist
 
-            # print(distances)
-
             # finds the one-to-one duplicate object correspondences
             pred_idxs_left = set(duplicate_idxs)
             while distances:
@@ -773,23 +768,15 @@ class Environment:
                             min_pred_i = pred_i
                             min_targ_i = targ_i
 
-                # print('- ' * 3)
-                # print(min_targ_i, min_pred_i, min_dist)
-                # print(distances)
-                # print(pred_idxs_left)
-
                 # goal idx / initial idx are in sync
-                # TODO: COME BACK HERE!!!!
-                """
                 objs['goal'].append(
-                    Controller.get_pose_info(goal_poses[min_targ_i]))
+                    Helpers.get_pose_info(goal_poses[min_targ_i]))
                 objs['initial'].append(
-                    Controller.get_pose_info(initial_poses[min_targ_i]))
+                    Helpers.get_pose_info(initial_poses[min_targ_i]))
 
                 # rounded idx
                 objs['predicted'].append(
-                    Controller.get_pose_info(predicted_objs[min_pred_i]))
-                """
+                    Helpers.get_pose_info(predicted_objs[min_pred_i]))
 
                 # asserts one-to-one correspondences
                 pred_idxs_left.remove(min_pred_i)
