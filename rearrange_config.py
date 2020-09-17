@@ -301,8 +301,7 @@ class Environment:
             width=camera_pixel_width,
             height=camera_pixel_height,
             renderDepthImage=True,
-            renderObjectImage=True,
-            server_class=ai2thor.fifo_server.FifoServer)
+            renderObjectImage=True)
 
         # always begin in walkthrough phase
         self._shuffle_called = False
