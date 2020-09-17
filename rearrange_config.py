@@ -19,7 +19,7 @@ DATA_DIR = './data'
 ROTATE_STEP_DEGREES = 30
 MAX_HAND_METERS = 0.5
 logging.basicConfig(level=logging.INFO)
-VALID_OBJECTS = [
+SIM_OBJECTS = [
     'AlarmClock', 'AluminumFoil', 'Apple', 'AppleSliced', 'ArmChair',
     'BaseballBat', 'BasketBall', 'Bathtub', 'BathtubBasin', 'Bed', 'Blinds',
     'Book', 'Boots', 'Bottle', 'Bowl', 'Box', 'Bread', 'BreadSliced',
@@ -320,12 +320,17 @@ class Environment:
         self.shuffles_per_scene = len(list(self._data.values())[0])
 
         # local thor controller to execute all the actions
+        init_kwargs = {
+            'rotateStepDegrees': ROTATE_STEP_DEGREES,
+            'width': camera_pixel_width,
+            'height': camera_pixel_height,
+            'renderDepthImage': True,
+        }
+
+        if self.mode == 'easy':
+            init_kwargs['renderObjectImage'] = True
         self._controller = ai2thor.controller.Controller(
-            rotateStepDegrees=ROTATE_STEP_DEGREES,
-            width=camera_pixel_width,
-            height=camera_pixel_height,
-            renderDepthImage=True,
-            renderObjectImage=True)
+            **init_kwargs)
 
         # always begin in walkthrough phase
         self._shuffle_called = False
@@ -350,22 +355,42 @@ class Environment:
         self.reset()
 
     @property
-    def observation(self) -> Union[
-            Tuple[np.array, np.array], Tuple[np.array, np.array]]:
-        """Return the (RGB, depth) frames from the current observation.
+    def observation(self) -> Tuple[
+            np.array, np.array, Optional[Dict[str, List[np.array]]]]:
+        """Return the current (RGB, depth, Optional[instance masks]) frames.
 
         :RGB frame is 300x300x3 with integer entries in [0:255].
         :depth frame is 300x300 with unscaled entries representing the
             meter distance from the agent to the pixel.
+        :Optional[instance masks] frame is ONLY available on easy mode. It
+            consists of Dict[str, List[np.array]], mapping the string
+            object type to the list of instance masks for each particular
+            object. The instance masks are each 300x300 consisting of
+            boolean values of whether each pixel contains the specific
+            object instance.
+
+            All non-sim objects (such as walls and floors) are grouped as
+            'Structure' objects. The full list of sim objects is at
+            ai2thor.allenai.org/ithor/documentation/objects/object-types.
+
         """
         if self.mode == 'easy':
+            # reformat instance masks
+            masks = defaultdict(list)
+            for id, mask in self._last_event.instance_masks.items():
+                object_type = id[:id.find('|')]
+                if object_type not in SIM_OBJECTS:
+                    # groups objects like walls and floors
+                    object_type = 'Structure'
+                masks[object_type].append(mask)
             return (
                 self._last_event.frame,
                 self._last_event.depth_frame,
+                dict(masks)
             )
 
         # default mode
-        return self._last_event.frame, self._last_event.depth_frame
+        return self._last_event.frame, self._last_event.depth_frame, None
 
     @property
     def action_space(self) -> ActionSpace:
