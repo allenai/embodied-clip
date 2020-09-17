@@ -10,7 +10,7 @@ import json
 import os
 import logging
 
-REQUIRED_VERSION = '2.4.12'
+REQUIRED_VERSION = '2.4.19'
 DATA_DIR = './data'
 ROTATE_STEP_DEGREES = 30
 MAX_HAND_METERS = 0.5
@@ -867,14 +867,9 @@ class Environment:
 
     @property
     def object_change_n(self) -> int:
-        """Return the number of objects changed in the current scene.
-
-        Raises Exception if evaluate has not yet been called, after resetting
-        and shuffling the scene.
-        """
-        if self._object_change_n is None:
-            raise Exception('Please call evaluate first, then access.')
-        return self._object_change_n
+        """Return the number of objects changed in the current scene."""
+        scene_data = self._data[self.scene][self.current_rearrangement]
+        return scene_data['object_rearrangement_count']
 
     def evaluate(self,
                  initial_poses: List[Dict[str, Any]],
@@ -910,10 +905,6 @@ class Environment:
         cumulative_reward = 0
         obj_change_count = 0
 
-        # note that this method also finds the object change count,
-        # so an immediate return of 0 doesn't suffice.
-        return_0 = False
-
         for obj_i in range(len(initial_poses)):
             targ = goal_poses[obj_i]
             init = initial_poses[obj_i]
@@ -921,7 +912,7 @@ class Environment:
 
             # no reward for breaking a non-broken starting object
             if pred['broken']:
-                return_0 = True
+                return 0
 
             # check if the object has openness
             if targ['openness'] is not None:
@@ -932,7 +923,7 @@ class Environment:
                     obj_change_count += 1
                 elif abs(targ['openness'] - pred['openness']) > 0.2:
                     # scene is messed up... openness is not meant to change
-                    return_0 = True
+                    return 0
 
             # non-moveable objects do not have bounding boxes
             if init['bounding_box'] is None:
@@ -948,13 +939,12 @@ class Environment:
             if expected_iou > 0.5:
                 # scene is messed up... obj not supposed to change positions
                 if pred_iou <= 0.5:
-                    return_0 = True
+                    return 0
             else:
                 # object position changes
                 cumulative_reward += 1 if pred_iou > 0.5 else 0
                 obj_change_count += 1
-        self._object_change_n = obj_change_count
         return (
-            0 if return_0 else cumulative_reward / obj_change_count
+            cumulative_reward / obj_change_count
             if obj_change_count else 0
         )
