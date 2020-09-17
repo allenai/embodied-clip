@@ -1,5 +1,9 @@
-"""Helper file to configure scenes and evaluate object pose predictions."""
+"""Helper file to configure scenes and evaluate object pose predictions.
 
+For more information, see https://ai2thor.allenai.org/rearrangement.
+"""
+
+import ai2thor
 import ai2thor.controller
 from collections import defaultdict
 from typing import Dict, Callable, Tuple, Any, Union, List, Optional
@@ -253,12 +257,13 @@ class Helpers:
 class Environment:
     """Custom AI2-THOR Controller for the task of object unshuffling."""
 
-    def __init__(self, stage: str):
+    def __init__(self, stage: str, mode: str = 'default'):
         """Initialize a new rearrangement controller.
 
         -----
         Attributes
         :stage (str) must be in {'train', 'val'}. (casing is ignored)
+        :mode (str) must be in {'default', 'easy'}. (casing is ignored)
 
         """
         if ai2thor.__version__ != REQUIRED_VERSION:
@@ -268,7 +273,10 @@ class Environment:
 
         stage = stage.lower()
         if stage not in {'train', 'val'}:
-            raise ValueError("Stage must be either 'train' or 'val'.")
+            raise ValueError("stage must be either 'train' or 'val'.")
+        self.mode = mode.lower()
+        if self.mode not in {'default', 'easy'}:
+            raise ValueError("mode must be either 'default' or 'easy'.")
 
         if stage == 'train':
             data_path = os.path.join(DATA_DIR, 'train.json')
@@ -292,7 +300,9 @@ class Environment:
             rotateStepDegrees=ROTATE_STEP_DEGREES,
             width=camera_pixel_width,
             height=camera_pixel_height,
-            renderDepthImage=True)
+            renderDepthImage=True,
+            renderObjectImage=True,
+            server_class=ai2thor.fifo_server.FifoServer)
 
         # always begin in walkthrough phase
         self._shuffle_called = False
@@ -317,13 +327,21 @@ class Environment:
         self.reset()
 
     @property
-    def observation(self) -> Tuple[np.array, np.array]:
+    def observation(self) -> Union[
+            Tuple[np.array, np.array], Tuple[np.array, np.array]]:
         """Return the (RGB, depth) frames from the current observation.
 
         :RGB frame is 300x300x3 with integer entries in [0:255].
         :depth frame is 300x300 with unscaled entries representing the
             meter distance from the agent to the pixel.
         """
+        if self.mode == 'easy':
+            return (
+                self._last_event.frame,
+                self._last_event.depth_frame,
+            )
+
+        # default mode
         return self._last_event.frame, self._last_event.depth_frame
 
     @property
