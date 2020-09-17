@@ -19,6 +19,30 @@ DATA_DIR = './data'
 ROTATE_STEP_DEGREES = 30
 MAX_HAND_METERS = 0.5
 logging.basicConfig(level=logging.INFO)
+VALID_OBJECTS = [
+    'AlarmClock', 'AluminumFoil', 'Apple', 'AppleSliced', 'ArmChair',
+    'BaseballBat', 'BasketBall', 'Bathtub', 'BathtubBasin', 'Bed', 'Blinds',
+    'Book', 'Boots', 'Bottle', 'Bowl', 'Box', 'Bread', 'BreadSliced',
+    'ButterKnife', 'Cabine', 'Candle', 'CD', 'CellPhone', 'Chair', 'Cloth',
+    'CoffeeMachine', 'CoffeeTable', 'CounterTop', 'CreditCard', 'Cup',
+    'Curtains', 'Desk', 'DeskLamp', 'Desktop', 'DiningTable', 'DishSponge',
+    'DogBed', 'Drawer', 'Dresser', 'Dumbbell', 'Egg', 'EggCracked', 'Faucet',
+    'Floor', 'FloorLamp', 'Footstool', 'Fork', 'Fridge', 'GarbageBag',
+    'GarbageCan', 'HandTowel', 'HandTowelHolder', 'HousePlant', 'Kettle',
+    'KeyChain', 'Knife', 'Ladle', 'Laptop', 'LaundryHamper', 'Lettuce',
+    'LettuceSliced', 'LightSwitch', 'Microwave', 'Mirror', 'Mug', 'Newspaper',
+    'Ottoman', 'Painting', 'Pan', 'PaperTowel', 'Pen', 'Pencil',
+    'PepperShaker', 'Pillow', 'Plate', 'Plunger', 'Poster', 'Pot', 'Potato',
+    'PotatoSliced', 'RemoteControl', 'RoomDecor', 'Safe', 'SaltShaker',
+    'ScrubBrush', 'Shelf', 'ShelvingUnit', 'ShowerCurtain', 'ShowerDoor',
+    'ShowerGlass', 'ShowerHead', 'SideTable', 'Sink', 'SinkBasin', 'SoapBar',
+    'SoapBottle', 'Sofa', 'Spatula', 'Spoon', 'SprayBottle', 'Statue',
+    'Stool', 'StoveBurner', 'StoveKnob', 'TableTopDecor', 'TargetCircle',
+    'TeddyBear', 'Television', 'TennisRacket', 'TissueBox', 'Toaster',
+    'Toilet', 'ToiletPaper', 'ToiletPaperHanger', 'Tomato', 'TomatoSliced',
+    'Towel', 'TowelHolder', 'TVStand', 'VacuumCleaner', 'Vase', 'Watch',
+    'WateringCan', 'Window', 'WineBottle'
+]
 
 
 class BoundedFloat:
