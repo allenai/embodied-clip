@@ -821,7 +821,7 @@ class Environment:
             if self._current_scene_idx == 0:
                 self.current_rearrangement += 1
                 self.current_rearrangement %= self.shuffles_per_scene
-            scene = self.scenes[self._current_scene_idx]
+            scene = self.scene
         else:
             # user specifies a scene
             self.current_rearrangement = (rearrangement_idx if
@@ -860,7 +860,7 @@ class Environment:
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
         self.walkthrough_phase = False
-        scene = self.scenes[self._current_scene_idx]
+        scene = self.scene
         data = self._data[scene][self.current_rearrangement]
         self._controller.reset(scene)
 
