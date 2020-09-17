@@ -102,7 +102,7 @@ rgb, depth = env.observation
 
 ### 🧑‍🚀 Action Space
 
-The `ActionSpace` for both the walkthrough and the unshuffling phases are accessible with:
+The `ActionSpace` for both the walkthrough and the unshuffling phases is accessible with:
 
 ```python
 env.action_space
@@ -351,6 +351,15 @@ episode_score = env.evaluate(
     goal_poses,
     predicted_poses)
 ```
+
+**Number of objects changed 🔢.** For each episode, between 1 and 5 objects have a state change from their initial pose to their goal pose. To access the number of objects that change in a particular episode, call:
+
+```python
+env.evaluate(...)
+env.object_change_n
+```
+
+> Note that <span style="font-family: monospace">evaluate(...)</span> must always be called before accessing the number of objects that have changed in an episode.
 
 **Score calculation 💯.** The episode's score ranges between `[0:1]` and is calculated as follows:
 
