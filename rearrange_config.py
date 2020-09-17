@@ -298,9 +298,11 @@ class Environment:
         stage = stage.lower()
         if stage not in {'train', 'val'}:
             raise ValueError("stage must be either 'train' or 'val'.")
+
         self.mode = mode.lower()
         if self.mode not in {'default', 'easy'}:
             raise ValueError("mode must be either 'default' or 'easy'.")
+        self._drop_positions = dict()
 
         if stage == 'train':
             data_path = os.path.join(DATA_DIR, 'train.json')
@@ -441,6 +443,11 @@ class Environment:
                     'z_degrees': BoundedFloat(low=-0.5, high=0.5),
                 },
                 self.drop_held_object: {}
+            })
+
+        if self.mode == 'easy' and self._shuffle_called:
+            actions.update({
+                self.magic_drop_held_object: {}
             })
 
         return ActionSpace(actions)
@@ -759,6 +766,59 @@ class Environment:
             action_fn=self.drop_held_object,
             thor_action='DropHandObject')
 
+    def magic_drop_held_object(self) -> None:
+        """Drop the object in the agent's hand to the target position.
+
+        TODO.
+        """
+        if not self._shuffle_called:
+            raise Exception('Must be in shuffle mode.')
+        if not self.mode == 'easy':
+            raise Exception('Must be in easy mode.')
+
+        # round positions to 2 decimals
+        DEC = 2
+
+        for obj in self._last_event.metadata['objects']:
+            if obj['isPickedUp']:
+                agent = self._last_event.metadata['agent']
+                valid_agent_poses = self._drop_positions[obj['name']]
+                for i in range(len(valid_agent_poses['x'])):
+                    # Checks if the agent is close enough to the target
+                    # for the magic drop to be applied.
+                    if (
+                            # position check
+                            round(valid_agent_poses['x'][i], DEC) ==
+                            round(agent['position']['x'][i], DEC) and
+                            round(valid_agent_poses['y'][i], DEC) ==
+                            round(agent['position']['y'][i], DEC) and
+                            round(valid_agent_poses['z'][i], DEC) ==
+                            round(agent['position']['z'][i], DEC) and
+
+                            # rotation check (nearest 90 degree)
+                            int(valid_agent_poses['rotation'][i]) ==
+                            round(agent['rotation']['y'] / 90) * 90 and
+
+                            # standing check
+                            int(valid_agent_poses['standing'][i]) ==
+                            int(agent['isStanding']) and
+
+                            # horizon check
+                            int(valid_agent_poses['horizon'][i]) ==
+                            int(agent['cameraHorizon'])):
+                        goal_pos = valid_agent_poses['obj_pos']
+                        goal_rot = valid_agent_poses['obj_rot']
+                        self._controller.step(
+                            action='PlaceObjectAtPoint',
+                            objectId=obj['objectId'],
+                            rotation=goal_rot,
+                            position=goal_pos)
+                        break
+                break
+        else:
+            # agent is too far away from target, just drop like normal.
+            self._controller.step('DropHandObject')
+
     @property
     def _last_event(self) -> ai2thor.server.Event:
         """Return the AI2-THOR Event from the most recent controller action."""
@@ -905,6 +965,18 @@ class Environment:
         self.agent_signals_done = False
         self._object_change_n: Optional[int] = None
 
+        # store the magic drop positions
+        if self.mode == 'easy':
+            for obj in self._last_event.metadata['objects']:
+                if obj['pickupable']:
+                    evt = self._controller.step(
+                        action='PositionsFromWhichItemIsInteractable',
+                        objectId=obj['objectId'])
+                    valid_agent_poses = evt.metadata['actionReturn']
+                    valid_agent_poses['obj_pos'] = obj['position']
+                    valid_agent_poses['obj_rot'] = obj['rotation']
+                    self._drop_positions[obj['name']] = valid_agent_poses
+
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
         self.walkthrough_phase = False
@@ -1014,3 +1086,7 @@ class Environment:
             cumulative_reward / obj_change_count
             if obj_change_count else 0
         )
+
+    def stop(self):
+        """Terminate the current AI2-THOR session."""
+        self._controller.stop()
