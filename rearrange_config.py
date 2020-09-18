@@ -281,19 +281,27 @@ class Helpers:
 class Environment:
     """Custom AI2-THOR Controller for the task of object unshuffling."""
 
-    def __init__(self, stage: str, mode: str = 'default'):
+    def __init__(
+            self,
+            stage: str,
+            mode: str = 'default',
+            render_depth: bool = True,
+            render_instance_masks: bool = False):
         """Initialize a new rearrangement controller.
 
         -----
         Attributes
         :stage (str) must be in {'train', 'val'}. (casing is ignored)
         :mode (str) must be in {'default', 'easy'}. (casing is ignored)
+        :render_depth (bool) states if the depth frame should be rendered.
+        :render_instance_masks (bool) states if the instance masks should be
+            rendered. An Exception is thrown if mode = 'default' and
+            render_instance_masks is True, since masks are only available
+            on easy mode.
 
         """
         if ai2thor.__version__ != REQUIRED_VERSION:
             raise ValueError(f'Please use AI2-THOR v{REQUIRED_VERSION}')
-        camera_pixel_width: int = 300
-        camera_pixel_height: int = 300
 
         stage = stage.lower()
         if stage not in {'train', 'val'}:
@@ -303,6 +311,10 @@ class Environment:
         if self.mode not in {'default', 'easy'}:
             raise ValueError("mode must be either 'default' or 'easy'.")
         self._drop_positions: Dict[str, Any] = dict()
+
+        if self.mode == 'default' and render_instance_masks:
+            raise Exception(
+                'render_instance_masks is only available on easy mode.')
 
         if stage == 'train':
             data_path = os.path.join(DATA_DIR, 'train.json')
@@ -322,18 +334,13 @@ class Environment:
         self.shuffles_per_scene = len(list(self._data.values())[0])
 
         # local thor controller to execute all the actions
-        init_kwargs = dict(
-            rotateStepDegrees=ROTATE_STEP_DEGREES,
-            width=camera_pixel_width,
-            height=camera_pixel_height,
-            renderDepthImage=True,
-            server_class=ai2thor.fifo_server.FifoServer
-        )
-
-        if self.mode == 'easy':
-            init_kwargs['renderObjectImage'] = True
+        self._render_depth = render_depth
+        self._render_instance_masks = render_instance_masks
         self._controller = ai2thor.controller.Controller(
-            **init_kwargs)
+            rotateStepDegrees=ROTATE_STEP_DEGREES,
+            renderDepthImage=render_depth,
+            renderObjectImage=render_instance_masks,
+            server_class=ai2thor.fifo_server.FifoServer)
 
         # always begin in walkthrough phase
         self._shuffle_called = False
@@ -359,7 +366,7 @@ class Environment:
 
     @property
     def observation(self) -> Tuple[
-            np.array, np.array, Optional[Dict[str, List[np.array]]]]:
+            np.array, Optional[np.array], Optional[Dict[str, List[np.array]]]]:
         """Return the current (RGB, depth, Optional[instance masks]) frames.
 
         :RGB frame is 300x300x3 with integer entries in [0:255].
@@ -377,7 +384,10 @@ class Environment:
             ai2thor.allenai.org/ithor/documentation/objects/object-types.
 
         """
-        if self.mode == 'easy':
+        rgb = self._last_event.frame
+        depth = self._last_event.depth_frame if self._render_depth else None
+
+        if self._render_instance_masks:
             # reformat instance masks
             masks = defaultdict(list)
             for id, mask in self._last_event.instance_masks.items():
@@ -386,14 +396,10 @@ class Environment:
                     # groups objects like walls and floors
                     object_type = 'Structure'
                 masks[object_type].append(mask)
-            return (
-                self._last_event.frame,
-                self._last_event.depth_frame,
-                dict(masks)
-            )
+            return rgb, depth, dict(masks)
 
         # default mode
-        return self._last_event.frame, self._last_event.depth_frame, None
+        return rgb, depth, None
 
     @property
     def action_space(self) -> ActionSpace:
