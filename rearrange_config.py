@@ -285,6 +285,7 @@ class Environment:
             self,
             stage: str,
             mode: str = 'default',
+            render_depth: bool = True,
             render_instance_masks: bool = False):
         """Initialize a new rearrangement controller.
 
@@ -292,6 +293,7 @@ class Environment:
         Attributes
         :stage (str) must be in {'train', 'val'}. (casing is ignored)
         :mode (str) must be in {'default', 'easy'}. (casing is ignored)
+        :render_depth (bool) states if the depth frame should be rendered.
         :render_instance_masks (bool) states if the instance masks should be
             rendered. An Exception is thrown if mode = 'default' and
             render_instance_masks is True, since masks are only available
@@ -333,9 +335,10 @@ class Environment:
 
         # local thor controller to execute all the actions
         self._render_instance_masks = render_instance_masks
+        self._render_depth = render_depth
         self._controller = ai2thor.controller.Controller(
             rotateStepDegrees=ROTATE_STEP_DEGREES,
-            renderDepthImage=True,
+            renderDepthImage=render_depth,
             renderObjectImage=render_instance_masks,
             server_class=ai2thor.fifo_server.FifoServer)
 
@@ -382,7 +385,7 @@ class Environment:
 
         """
         rgb = self._last_event.frame
-        depth = self._last_event.depth_frame
+        depth = self._last_event.depth_frame if self._render_depth else None
 
         if self._render_instance_masks:
             # reformat instance masks
