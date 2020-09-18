@@ -110,18 +110,9 @@ For both the walkthrough and unshuffle phases, the agent only recieves RGB-D obs
 rgb, depth, masks = env.observation
 ```
 
-<p float="left">
-    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/obs.png" alt="POV Agent Image" width="45%">
-    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/depth.svg" alt="Depth Agent Image" width="54%">
-</p>
-
-<img width="100%" src="https://ai2thor.allenai.org/docs/assets/rearrangement/mask_image.png">
-
 **RGB image 📷.** The RGB image is a `300x300x3` NumPy array from the agent's eye-level camera. All values are stored as integers between `[0:255]`.
 
 **Depth image 📸.** The depth image is a `300x300` NumPy array from the agent's eye-level camera. We provide unnormalized values, scaled to the meter distance from the agent.
-
-> Transparent materials do not write to the depth frame.
 
 **Instance masks 🎭.** For every sim object instance in the current frame, a boolean mask is generated. The masks are stored as dictionaries with:
 
