@@ -111,13 +111,7 @@ rgb, depth, masks = env.observation
     <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/depth.svg" alt="Depth Agent Image" width="54%">
 </p>
 
-<div class="mask" style>
-    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/statue.jpg" alt="Status mask" width="18%">
-    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/vase.jpg" alt="Vase mask" width="18%">
-    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/salt.jpg" alt="Salt mask" width="18%">
-    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/soap.jpg" alt="Soap mask" width="18%">
-    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/bottle.jpg" alt="Bottle mask" width="18%">
-</div>
+<img width="100%" src="https://ai2thor.allenai.org/docs/assets/rearrangement/mask_image.png">
 
 **RGB image 📷.** The RGB image is a `300x300x3` NumPy array from the agent's eye-level camera. All values are stored as integers between `[0:255]`.
 
