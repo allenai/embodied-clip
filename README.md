@@ -104,6 +104,13 @@ This is particularly useful if you want to use multiple initialization parameter
 
 ## 🖼️ Observations
 
+<p float="left">
+    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/obs.png" alt="POV Agent Image" width="45%">
+    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/depth.svg" alt="Depth Agent Image" width="54%">
+</p>
+
+<img width="100%" src="https://ai2thor.allenai.org/docs/assets/rearrangement/mask_image.png">
+
 For both the walkthrough and unshuffle phases, the agent only recieves RGB-D observations, accessible at each time step with:
 
 ```python
