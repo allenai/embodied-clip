@@ -26,12 +26,12 @@ git clone https://github.com/allenai/ai2thor-rearrangement.git
 ## 💻 Installation
 
 ```bash
-pip install ai2thor==2.4.12 scipy
+pip install -r requirements.txt
 ```
 
 **Python 3.6+ 🐍.** Each of the actions supports `typing` within <span class="chillMono">Python</span>.
 
-**AI2-THOR 2.4.12 🧞.** To ensure reproducible results, we're restricting all users to use the exact same version of <span class="chillMono">AI2-THOR</span>.
+**AI2-THOR 2.4.20 🧞.** To ensure reproducible results, we're restricting all users to use the exact same version of <span class="chillMono">AI2-THOR</span>.
 
 **SciPy 🧑‍🔬.** We utilize <span class="chillMono">SciPy</span> for evaluation. It helps calculate the IoU between 3D bounding boxes.
 
@@ -80,18 +80,34 @@ for i_episode in range(dataset_size):
     env.reset()  # prepare next episode
 ```
 
-**Validation data 👏.** To use the validation data, initialize the <span class="chillMono">env</span> with:
+**Number of objects changed 🔢.** For each episode, between 1 and 5 objects have a state change from their initial pose to their goal pose. To access the number of objects that change in a particular episode, call:
 
 ```python
-env = Environment(stage='val')
+env.object_change_n
 ```
+
+**Mode 🎁.** To help make the task more achievable, we provide an `easy` mode. This mode allows users to `render_instance_masks` and call `env.magic_drop_held_object()`.
+
+**Scene 🛁.** To access the name of the scene, call:
+
+```python
+env.scene
+```
+
+**Stop 🛑.** To terminate the current environment, call:
+
+```python
+env.stop()
+```
+
+This is particularly useful if you want to use multiple initialization parameters within the same script.
 
 ## 🖼️ Observations
 
 For both the walkthrough and unshuffle phases, the agent only recieves RGB-D observations, accessible at each time step with:
 
 ```python
-rgb, depth = env.observation
+rgb, depth, masks = env.observation
 ```
 
 <p float="left">
@@ -99,11 +115,20 @@ rgb, depth = env.observation
     <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/depth.svg" alt="Depth Agent Image" width="54%">
 </p>
 
+<img width="100%" src="https://ai2thor.allenai.org/docs/assets/rearrangement/mask_image.png">
+
 **RGB image 📷.** The RGB image is a `300x300x3` NumPy array from the agent's eye-level camera. All values are stored as integers between `[0:255]`.
 
 **Depth image 📸.** The depth image is a `300x300` NumPy array from the agent's eye-level camera. We provide unnormalized values, scaled to the meter distance from the agent.
 
 > Transparent materials do not write to the depth frame.
+
+**Instance masks 🎭.** For every sim object instance in the current frame, a boolean mask is generated. The masks are stored as dictionaries with:
+
+- Keys being the base [sim object types](/ithor/documentation/objects/object-types/), plus <span class="chillMono">Structure</span> for all structural components, like walls or ceilings.
+- Values being a <span class="chillMono">List</span> of instance masks for the key's specific type. The instance masks are stored as <span class="chillMono">300x300</span> Boolean NumPy arrays, where <span class="chillMono">True</span> represents the instance appearing at that pixel.
+
+> Instance masks are only available on 🟢 easy mode!
 
 ## 🎮 Actions
 
@@ -286,6 +311,16 @@ Drops the object in the hand of an agent, if the hand is holding an object.
 
 > Dropping some objects may cause them to break, which we consider a [failed unshuffling](#-evaluation).
 
+**18. Magic drop held object 🔮.**
+
+> Unshuffle phase and 🟢 easy mode only.
+
+```python
+env.magic_drop_held_object()
+```
+
+Perfectly drops the object in the agent's hand to its goal pose, if the agent is within 1.5 meters of the goal pose of the object, and looking in its direction. Otherwise, the object is dropped normally.
+
 <br>
 
 ### 🎯 Target Point
@@ -359,15 +394,6 @@ episode_score = env.evaluate(
     goal_poses,
     predicted_poses)
 ```
-
-**Number of objects changed 🔢.** For each episode, between 1 and 5 objects have a state change from their initial pose to their goal pose. To access the number of objects that change in a particular episode, call:
-
-```python
-env.evaluate(...)
-env.object_change_n
-```
-
-> Note that <span style="font-family: monospace">evaluate(...)</span> must always be called before accessing the number of objects that have changed in an episode.
 
 **Score calculation 💯.** The episode's score ranges between `[0:1]` and is calculated as follows:
 
