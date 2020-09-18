@@ -51,7 +51,7 @@ dataset_size = len(env.scenes) * env.shuffles_per_scene
 for i_episode in range(dataset_size):
     # walkthrough the goal configuration
     for t_step in range(1000):
-        rgb, depth, masks = env.observation
+        rgb, depth = env.observation
 
         # START replace with your walkthrough action
         env.action_space.execute_random_action()
@@ -64,7 +64,7 @@ for i_episode in range(dataset_size):
     # unshuffle to recover the goal configuration
     env.shuffle()
     for t_step in range(1000):
-        rgb, depth, masks = env.observation
+        rgb, depth = env.observation
 
         # START replace with your unshuffle action
         env.action_space.execute_random_action()
@@ -85,7 +85,7 @@ for i_episode in range(dataset_size):
 env.object_change_n
 ```
 
-**Mode 🎁.** To help make the task more achievable, we provide an `easy` mode. This mode allows users to `render_instance_masks` and call `env.magic_drop_held_object()`.
+**Mode 🎁.** To help make the task more achievable, we provide an `easy` mode. This mode only allows users to call `env.magic_drop_held_object()`.
 
 **Scene 🛁.** To access the name of the scene, call:
 
@@ -103,29 +103,20 @@ This is particularly useful if you want to use multiple initialization parameter
 
 ## 🖼️ Observations
 
+For both the walkthrough and unshuffle phases, the agent only recieves RGB-D observations, accessible at each time step with:
+
+```python
+rgb, depth = env.observation
+```
+
 <p float="left">
     <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/obs.png" alt="POV Agent Image" width="45%">
     <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/depth.svg" alt="Depth Agent Image" width="54%">
 </p>
 
-<img width="100%" src="https://ai2thor.allenai.org/docs/assets/rearrangement/mask_image.png">
-
-For both the walkthrough and unshuffle phases, the agent only recieves RGB-D observations, accessible at each time step with:
-
-```python
-rgb, depth, masks = env.observation
-```
-
 **RGB image 📷.** The RGB image is a `300x300x3` NumPy array from the agent's eye-level camera. All values are stored as integers between `[0:255]`.
 
 **Depth image 📸.** The depth image is a `300x300` NumPy array from the agent's eye-level camera. We provide unnormalized values, scaled to the meter distance from the agent.
-
-**Instance masks 🎭.** For every sim object instance in the current frame, a boolean mask is generated. The masks are stored as dictionaries with:
-
-- Keys being the base [sim object types](/ithor/documentation/objects/object-types/), plus <span class="chillMono">Structure</span> for all structural components, like walls or ceilings.
-- Values being a <span class="chillMono">List</span> of instance masks for the key's specific type. The instance masks are stored as <span class="chillMono">300x300</span> Boolean NumPy arrays, where <span class="chillMono">True</span> represents the instance appearing at that pixel.
-
-> Instance masks are only available on 🟢 easy mode!
 
 ## 🎮 Actions
 

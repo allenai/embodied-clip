@@ -11,7 +11,7 @@ dataset_size = len(env.scenes) * env.shuffles_per_scene
 for i_episode in range(dataset_size):
     # walkthrough the goal configuration
     for t_step in range(1000):
-        rgb, depth, masks = env.observation
+        rgb, depth = env.observation
 
         # START replace with your walkthrough action
         env.action_space.execute_random_action()
@@ -24,7 +24,7 @@ for i_episode in range(dataset_size):
     # unshuffle to recover the goal configuration
     env.shuffle()
     for t_step in range(1000):
-        rgb, depth, masks = env.observation
+        rgb, depth = env.observation
 
         # START replace with your unshuffle action
         env.action_space.execute_random_action()

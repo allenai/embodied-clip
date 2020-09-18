@@ -364,41 +364,17 @@ class Environment:
         self.reset()
 
     @property
-    def observation(self) -> Tuple[
-            np.array, Optional[np.array], Optional[Dict[str, List[np.array]]]]:
+    def observation(self) -> Tuple[np.array, Optional[np.array]]:
         """Return the current (RGB, depth, Optional[instance masks]) frames.
 
         :RGB frame is 300x300x3 with integer entries in [0:255].
         :depth frame is 300x300 with unscaled entries representing the
             meter distance from the agent to the pixel.
-        :Optional[instance masks] frame is ONLY available on easy mode. It
-            consists of Dict[str, List[np.array]], mapping the string
-            object type to the list of instance masks for each particular
-            object. The instance masks are each 300x300 consisting of
-            boolean values of whether each pixel contains the specific
-            object instance.
-
-            All non-sim objects (such as walls and floors) are grouped as
-            'Structure' objects. The full list of sim objects is at
-            ai2thor.allenai.org/ithor/documentation/objects/object-types.
 
         """
         rgb = self._last_event.frame
         depth = self._last_event.depth_frame if self._render_depth else None
-
-        if self._render_instance_masks:
-            # reformat instance masks
-            masks = defaultdict(list)
-            for id, mask in self._last_event.instance_masks.items():
-                object_type = id[:id.find('|')]
-                if object_type not in SIM_OBJECTS:
-                    # groups objects like walls and floors
-                    object_type = 'Structure'
-                masks[object_type].append(mask)
-            return rgb, depth, dict(masks)
-
-        # default mode
-        return rgb, depth, None
+        return rgb, depth
 
     @property
     def action_space(self) -> ActionSpace:
