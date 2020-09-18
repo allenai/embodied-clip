@@ -306,8 +306,6 @@ Drops the object in the hand of an agent, if the hand is holding an object.
 
 > Dropping some objects may cause them to break, which we consider a [failed unshuffling](#-evaluation).
 
-<hr class="bigHr">
-
 **18. Magic drop held object 🔮.**
 
 > Unshuffle phase and 🟢 easy mode only.
