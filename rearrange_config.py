@@ -14,7 +14,7 @@ import json
 import os
 import logging
 
-REQUIRED_VERSION = '2.4.19'
+REQUIRED_VERSION = '2.4.20'
 DATA_DIR = './data'
 ROTATE_STEP_DEGREES = 30
 MAX_HAND_METERS = 0.5
@@ -302,7 +302,7 @@ class Environment:
         self.mode = mode.lower()
         if self.mode not in {'default', 'easy'}:
             raise ValueError("mode must be either 'default' or 'easy'.")
-        self._drop_positions = dict()
+        self._drop_positions: Dict[str, Any] = dict()
 
         if stage == 'train':
             data_path = os.path.join(DATA_DIR, 'train.json')
@@ -322,12 +322,13 @@ class Environment:
         self.shuffles_per_scene = len(list(self._data.values())[0])
 
         # local thor controller to execute all the actions
-        init_kwargs = {
-            'rotateStepDegrees': ROTATE_STEP_DEGREES,
-            'width': camera_pixel_width,
-            'height': camera_pixel_height,
-            'renderDepthImage': True,
-        }
+        init_kwargs = dict(
+            rotateStepDegrees=ROTATE_STEP_DEGREES,
+            width=camera_pixel_width,
+            height=camera_pixel_height,
+            renderDepthImage=True,
+            server_class=ai2thor.fifo_server.FifoServer
+        )
 
         if self.mode == 'easy':
             init_kwargs['renderObjectImage'] = True
@@ -769,7 +770,16 @@ class Environment:
     def magic_drop_held_object(self) -> None:
         """Drop the object in the agent's hand to the target position.
 
-        TODO.
+        Exception is raised if shuffle has not yet been called on the current
+        episode or the agent is in default mode.
+
+        For magic drop to work:
+            1. The agent must be within 1.5 meters from the goal object's
+               position, observed during the walkthrough phase.
+            2. The agent must be looking in the direction of where it was
+               located in the walkthrough phase.
+
+        Otherwise, the normal drop in place will be applied.
         """
         if not self._shuffle_called:
             raise Exception('Must be in shuffle mode.')
