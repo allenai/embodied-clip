@@ -1,8 +1,11 @@
 """Training and inference loop for the AI2-THOR object rearrangement task."""
 
 from rearrange_config import Environment
-mode = 'default'  # or 'easy'
-env = Environment(stage='train', mode=mode)
+env = Environment(
+    stage='train',  # or 'val'
+    mode='default',  # or 'easy'
+    render_instance_masks=False  # only in easy mode
+)
 dataset_size = len(env.scenes) * env.shuffles_per_scene
 
 for i_episode in range(dataset_size):
