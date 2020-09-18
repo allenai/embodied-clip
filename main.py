@@ -1,13 +1,14 @@
 """Training and inference loop for the AI2-THOR object rearrangement task."""
 
 from rearrange_config import Environment
-env = Environment(stage='train')
+mode = 'default'  # or 'easy'
+env = Environment(stage='train', mode=mode)
 dataset_size = len(env.scenes) * env.shuffles_per_scene
 
 for i_episode in range(dataset_size):
     # walkthrough the goal configuration
     for t_step in range(1000):
-        rgb, depth = env.observation
+        rgb, depth, masks = env.observation
 
         # START replace with your walkthrough action
         env.action_space.execute_random_action()
@@ -20,7 +21,7 @@ for i_episode in range(dataset_size):
     # unshuffle to recover the goal configuration
     env.shuffle()
     for t_step in range(1000):
-        rgb, depth = env.observation
+        rgb, depth, masks = env.observation
 
         # START replace with your unshuffle action
         env.action_space.execute_random_action()
