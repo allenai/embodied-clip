@@ -44,8 +44,7 @@ from rearrange_config import Environment
 env = Environment(
     stage='train',  # or 'val'
     mode='default',  # or 'easy'
-    render_depth=True,
-    render_instance_masks=False  # only in easy mode
+    render_depth=True
 )
 dataset_size = len(env.scenes) * env.shuffles_per_scene
 

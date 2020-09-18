@@ -285,8 +285,7 @@ class Environment:
             self,
             stage: str,
             mode: str = 'default',
-            render_depth: bool = True,
-            render_instance_masks: bool = False):
+            render_depth: bool = True):
         """Initialize a new rearrangement controller.
 
         -----
@@ -294,10 +293,6 @@ class Environment:
         :stage (str) must be in {'train', 'val'}. (casing is ignored)
         :mode (str) must be in {'default', 'easy'}. (casing is ignored)
         :render_depth (bool) states if the depth frame should be rendered.
-        :render_instance_masks (bool) states if the instance masks should be
-            rendered. An Exception is thrown if mode = 'default' and
-            render_instance_masks is True, since masks are only available
-            on easy mode.
 
         """
         if ai2thor.__version__ != REQUIRED_VERSION:
@@ -312,6 +307,10 @@ class Environment:
             raise ValueError("mode must be either 'default' or 'easy'.")
         self._drop_positions: Dict[str, Any] = dict()
 
+        # instance masks now not supported. But an Exception would be thrown if
+        # mode = 'default' and render_instance_masks is True, since masks are
+        # only available on easy mode.
+        render_instance_masks: bool = False
         if self.mode == 'default' and render_instance_masks:
             raise Exception(
                 'render_instance_masks is only available on easy mode.')
