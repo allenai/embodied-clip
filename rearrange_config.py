@@ -460,6 +460,7 @@ class Environment:
         # If an object is already open, THOR doesn't support changing
         # it's openness without first closing it. So we simply try to first
         # close the object before reopening it.
+        self._controller.step('ResetObjectFilter')
         objs_1 = self._last_event.metadata['objects']
         close_event = self._controller.step('CloseObject', x=x, y=y)
 
@@ -492,6 +493,9 @@ class Environment:
             self._controller.step(
                 'OpenObject', moveMagnitude=openness,
                 objectId=closed_object_id)
+
+        # hide object metadata for next action
+        self._controller.step('SetObjectFilter', objectIds=[])
 
     def pickup_object(self, x: float, y: float) -> None:
         """Pick up the object corresponding to x/y.
@@ -770,6 +774,7 @@ class Environment:
         # round positions to 2 decimals
         DEC = 2
 
+        self._controller.step('ResetObjectFilter')
         for obj in self._last_event.metadata['objects']:
             if obj['isPickedUp']:
                 agent = self._last_event.metadata['agent']
@@ -809,6 +814,7 @@ class Environment:
         else:
             # agent is too far away from target, just drop like normal.
             self._controller.step('DropHandObject')
+        self._controller.step('SetObjectFilter', objectIds=[])
 
     @property
     def _last_event(self) -> ai2thor.server.Event:
@@ -826,7 +832,9 @@ class Environment:
         # access cached object poses
         if not self._shuffle_called:
             raise Exception('shuffle() must be called before accessing poses')
+        self._controller.step('ResetObjectFilter')
         predicted_objs = self._controller.last_event.metadata['objects']
+        self._controller.step('SetObjectFilter', objectIds=[])
 
         # sorts the object order
         predicted_objs = sorted(predicted_objs, key=lambda obj: obj['name'])
@@ -937,6 +945,9 @@ class Environment:
         rot = {'x': 0, 'y': data['agent_rotation'], 'z': 0}
         self._controller.step('TeleportFull', rotation=rot, **pos)
 
+        # show object metadata
+        self._controller.step('ResetObjectFilter')
+
         # open objects
         for obj in data['openable_data']:
             # id is re-found due to possible floating point errors
@@ -968,6 +979,9 @@ class Environment:
                     valid_agent_poses['obj_rot'] = obj['rotation']
                     self._drop_positions[obj['name']] = valid_agent_poses
 
+        # hide object metadata
+        self._controller.step('SetObjectFilter', objectIds=[])
+
     def shuffle(self):
         """Arranges the current starting data for the rearrangement phase."""
         self.walkthrough_phase = False
@@ -991,7 +1005,12 @@ class Environment:
         self._controller.step(
             'SetObjectPoses', objectPoses=data['starting_poses'])
         self._shuffle_called = True
+
+        # save object metadata
+        self._controller.step('ResetObjectFilter')
         self._initial_poses = self._last_event.metadata['objects']
+        self._controller.step('SetObjectFilter', objectIds=[])
+
         self.agent_signals_done = False
 
     @property
