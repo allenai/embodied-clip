@@ -3,6 +3,7 @@
 # 📝 Task Description
 
 **Overview 🤖.** The task involves moving and modifying randomly placed objects within a room so a goal configuration is obtained. There are 2 phases:
+
 1. **Walkthrough 👀.** The agent walks around the room and observes the objects in their ideal goal state.
 2. **Unshuffle 🏋.** After the walkthrough phase, we randomly change between 1 to 5 objects in the room. The agent's goal is to identify which objects have changed and reset those objects to their observed state from the walkthrough phase. Changes to an object's state may include changes to its position, orientation, or openness.
 
@@ -40,13 +41,18 @@ pip install ai2thor==2.4.12 scipy
 
 ```python
 from rearrange_config import Environment
-env = Environment(stage='train')
+env = Environment(
+    stage='train',  # or 'val'
+    mode='default',  # or 'easy'
+    render_depth=True,
+    render_instance_masks=False  # only in easy mode
+)
 dataset_size = len(env.scenes) * env.shuffles_per_scene
 
 for i_episode in range(dataset_size):
     # walkthrough the goal configuration
     for t_step in range(1000):
-        rgb, depth = env.observation
+        rgb, depth, masks = env.observation
 
         # START replace with your walkthrough action
         env.action_space.execute_random_action()
@@ -56,11 +62,10 @@ for i_episode in range(dataset_size):
         if env.agent_signals_done:
             break
 
-    env.shuffle()
-    
     # unshuffle to recover the goal configuration
+    env.shuffle()
     for t_step in range(1000):
-        rgb, depth = env.observation
+        rgb, depth, masks = env.observation
 
         # START replace with your unshuffle action
         env.action_space.execute_random_action()
@@ -84,9 +89,11 @@ env = Environment(stage='val')
 ## 🖼️ Observations
 
 For both the walkthrough and unshuffle phases, the agent only recieves RGB-D observations, accessible at each time step with:
+
 ```python
 rgb, depth = env.observation
 ```
+
 <p float="left">
     <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/obs.png" alt="POV Agent Image" width="45%">
     <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/depth.svg" alt="Depth Agent Image" width="54%">
@@ -107,6 +114,7 @@ The `ActionSpace` for both the walkthrough and the unshuffling phases is accessi
 ```python
 env.action_space
 ```
+
 The actions for the walkthrough 👀 phase and the unshuffling phase 🏋 are shown below.
 
 **1. Move ahead ☝.**
@@ -261,7 +269,7 @@ Attempts to move the object in the agent's hand. Here, the `y` coordinate is up 
 env.rotate_held_object(
     x: float(low=-0.5, high=0.5),
     y: float(low=-0.5, high=0.5),
-    z: float(low=-0.5, high=0.5))	
+    z: float(low=-0.5, high=0.5))
 ```
 
 Attempts to rotate the object in the agent's hand. Here, 0.5 corresponds to 90 degrees and -0.5 corresponds to -90 degrees.
