@@ -735,7 +735,7 @@ class Environment:
 
         if abs(x) > 0.5 or abs(y) > 0.5 or abs(z) > 0.5:
             raise ValueError('Rotations must be between [-0.5:0.5].')
-        self._controller.step('RotateHand', x=x, y=y, z=z)
+        self._controller.step('RotateHand', x=x*180, y=y*180, z=z*180)
 
     def drop_held_object(self) -> None:
         """Drop the object in the agent's hand.
