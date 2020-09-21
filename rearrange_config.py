@@ -420,9 +420,9 @@ class Environment:
                     'z_meters': BoundedFloat(low=-0.5, high=0.5),
                 },
                 self.rotate_held_object: {
-                    'x_degrees': BoundedFloat(low=-0.5, high=0.5),
-                    'y_degrees': BoundedFloat(low=-0.5, high=0.5),
-                    'z_degrees': BoundedFloat(low=-0.5, high=0.5),
+                    'x': BoundedFloat(low=-0.5, high=0.5),
+                    'y': BoundedFloat(low=-0.5, high=0.5),
+                    'z': BoundedFloat(low=-0.5, high=0.5),
                 },
                 self.drop_held_object: {}
             })
@@ -715,30 +715,27 @@ class Environment:
                 'x_meters': 'x', 'y_meters': 'y', 'z_meters': 'z'},
             x_meters=x_meters, y_meters=y_meters, z_meters=z_meters)
 
-    def rotate_held_object(
-            self,
-            x_degrees: float,
-            y_degrees: float,
-            z_degrees: float) -> None:
+    def rotate_held_object(self, x: float, y: float, z: float) -> None:
         """Rotate the object in the agent's hand by the specified degrees.
+
+        The rotation parameters are scaled linearly to put rotations
+        between [-90:90] degrees.
 
         -----
         Attribues
-        :x_degrees (float, min=-90, max=90) rotation degrees along the x-axis.
-        :y_degrees (float, min=-90, max=90) rotation degrees along the y-axis.
-        :z_degrees (float, min=-90, max=90) rotation degrees along the z-axis.
+        :x (float, min=-0.5, max=0.5) rotation along the x-axis.
+        :y (float, min=-0.5, max=0.5) rotation along the y-axis.
+        :z (float, min=-0.5, max=0.5) rotation along the z-axis.
 
         -----
         The action is only successful agent is holding an object.
         """
-        Helpers.execute_action(
-            controller=self._controller,
-            action_space=self.action_space,
-            action_fn=self.rotate_held_object,
-            thor_action='RotateHand',
-            updated_kwarg_names={
-                'x_degrees': 'x', 'y_degrees': 'y', 'z_degrees': 'z'},
-            x_degrees=x_degrees, y_degrees=y_degrees, z_degrees=z_degrees)
+        if not self._shuffle_called:
+            raise Exception('Must be in shuffle phase')
+
+        if abs(x) > 0.5 or abs(y) > 0.5 or abs(z) > 0.5:
+            raise ValueError('Rotations must be between [-0.5:0.5].')
+        self._controller.step('RotateHand', x=x, y=y, z=z)
 
     def drop_held_object(self) -> None:
         """Drop the object in the agent's hand.
