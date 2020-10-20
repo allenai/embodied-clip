@@ -764,54 +764,59 @@ class Environment:
         Otherwise, the normal drop in place will be applied.
         """
         if not self._shuffle_called:
-            raise Exception('Must be in shuffle mode.')
-        if not self.mode == 'easy':
-            raise Exception('Must be in easy mode.')
+            raise Exception("Must be in shuffle mode.")
+        if not self.mode == "easy":
+            raise Exception("Must be in easy mode.")
 
         # round positions to 2 decimals
         DEC = 2
 
-        self._controller.step('ResetObjectFilter')
-        for obj in self._last_event.metadata['objects']:
-            if obj['isPickedUp']:
-                agent = self._last_event.metadata['agent']
-                valid_agent_poses = self._drop_positions[obj['name']]
-                for i in range(len(valid_agent_poses['x'])):
+        event = self._controller.step("ResetObjectFilter")
+        for obj in event.metadata["objects"]:
+            break_outer_loop: bool = False
+            if obj["isPickedUp"]:
+                agent = event.metadata["agent"]
+                valid_agent_poses = self._drop_positions[obj["name"]]
+                for i in range(len(valid_agent_poses["x"])):
                     # Checks if the agent is close enough to the target
                     # for the magic drop to be applied.
                     if (
-                            # position check
-                            round(valid_agent_poses['x'][i], DEC) ==
-                            round(agent['position']['x'][i], DEC) and
-                            round(valid_agent_poses['y'][i], DEC) ==
-                            round(agent['position']['y'][i], DEC) and
-                            round(valid_agent_poses['z'][i], DEC) ==
-                            round(agent['position']['z'][i], DEC) and
-
-                            # rotation check (nearest 90 degree)
-                            int(valid_agent_poses['rotation'][i]) ==
-                            round(agent['rotation']['y'] / 90) * 90 and
-
-                            # standing check
-                            int(valid_agent_poses['standing'][i]) ==
-                            int(agent['isStanding']) and
-
-                            # horizon check
-                            int(valid_agent_poses['horizon'][i]) ==
-                            int(agent['cameraHorizon'])):
-                        goal_pos = valid_agent_poses['obj_pos']
-                        goal_rot = valid_agent_poses['obj_rot']
+                        # position check
+                        round(valid_agent_poses["x"][i], DEC)
+                        == round(agent["position"]["x"], DEC)
+                        and round(valid_agent_poses["y"][i], DEC)
+                        == round(agent["position"]["y"], DEC)
+                        and round(valid_agent_poses["z"][i], DEC)
+                        == round(agent["position"]["z"], DEC)
+                        and
+                        # rotation check (nearest 90 degree)
+                        int(valid_agent_poses["rotation"][i])
+                        == round(agent["rotation"]["y"] / 90) * 90
+                        and
+                        # standing check
+                        int(valid_agent_poses["standing"][i])
+                        == int(agent["isStanding"])
+                        and
+                        # horizon check
+                        int(valid_agent_poses["horizon"][i])
+                        == int(agent["cameraHorizon"])
+                    ):
+                        goal_pos = valid_agent_poses["obj_pos"]
+                        goal_rot = valid_agent_poses["obj_rot"]
                         self._controller.step(
-                            action='PlaceObjectAtPoint',
-                            objectId=obj['objectId'],
+                            action="PlaceObjectAtPoint",
+                            objectId=obj["objectId"],
                             rotation=goal_rot,
-                            position=goal_pos)
+                            position=goal_pos,
+                        )
+                        break_outer_loop = True
                         break
+            if break_outer_loop:
                 break
         else:
             # agent is too far away from target, just drop like normal.
-            self._controller.step('DropHandObject')
-        self._controller.step('SetObjectFilter', objectIds=[])
+            self._controller.step("DropHandObject")
+        self._controller.step("SetObjectFilter", objectIds=[])
 
     @property
     def _last_event(self) -> ai2thor.server.Event:
