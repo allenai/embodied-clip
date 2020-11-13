@@ -128,7 +128,10 @@ The `ActionSpace` for both the walkthrough and the unshuffling phases is accessi
 env.action_space
 ```
 
-The actions for the walkthrough 👀 phase and the unshuffling phase 🏋 are shown below.
+<details>
+<summary>The actions for the walkthrough 👀 phase and the unshuffling phase 🏋 are detailed within this toggle.</summary>
+
+<br>
 
 **1. Move ahead ☝.**
 
@@ -309,7 +312,7 @@ env.magic_drop_held_object()
 
 Perfectly drops the object in the agent's hand to its goal pose, if the agent is within 1.5 meters of the goal pose of the object, and looking in its direction. Otherwise, the object is dropped normally.
 
-<br>
+</details>
 
 ### 🎯 Target Point
 
