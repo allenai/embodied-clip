@@ -214,7 +214,7 @@ A total of 82 actions are available to our agents, these include:
 * `Rotate[Right/Left]` - Results in the agent rotating 90 degrees clockwise (if `Right`) or counterclockwise (if `Left`).
     This action may fail if the agent is holding an object and rotating would cause the object to collide.
   
-* `Look[Up/Down]` - Results in the agent raising or lowering its camera angle by 30 degrees (up to a max of 60 degrees below horizontal and 30$^\circ$ above horizontal).
+* `Look[Up/Down]` - Results in the agent raising or lowering its camera angle by 30 degrees (up to a max of 60 degrees below horizontal and 30 degrees above horizontal).
 
 **Object Interaction**
 
