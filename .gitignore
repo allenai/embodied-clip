@@ -1,3 +1,13 @@
+starter_data
+data
+
+# Other data
+*.json
+
+*.patch
+rearrange_out
+experiment_output
+
 .vscode/
 rearrange_venv/
 data/test.json

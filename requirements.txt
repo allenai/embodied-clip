@@ -1,2 +1,10 @@
-ai2thor==2.4.20
+ai2thor==2.7.2
+allenact
+allenact_plugins
+numpy
+torch>1.6.0
+torchvision>=0.7.0
+matplotlib
 scipy
+stringcase
+lru-dict
