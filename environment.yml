@@ -1,0 +1,44 @@
+name: thor-rearrange
+channels:
+  - defaults
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.6.12
+  - python-blosc
+  - black=19.10b0
+  - colour
+  - coverage
+  - flake8
+  - gitpython
+  - ipython
+  - markdown=3.3
+  - matplotlib>=3.3.1
+  - mypy
+  - networkx
+  - numpy>=1.19.1
+  - pandas>=1.1.3
+  - pillow
+  - pip
+  - pytest>=6.1.1
+  - pytorch>=1.6.0
+  - quaternion>=2020.9.5.14.42.2
+  - ruamel.yaml
+  - scipy>=1.5.2
+  - setproctitle
+  - tensorboard=2.2.1
+  - torchvision>=0.7.0
+  - tqdm
+  - setuptools
+  - stringcase
+  - pip:
+    - allenact
+    - allenact_plugins
+    - ai2thor==2.7.2
+    - numpy-quaternion
+    - docformatter==1.3.1
+    - "gym>=0.17.0,<0.18.0"
+    - pyquaternion==0.9.9
+    - compress_pickle
+    - lru-dict
+prefix: /anaconda3/envs/thor-rearrange
