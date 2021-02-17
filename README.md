@@ -129,7 +129,7 @@ a local `./src` directory. By explicitly specifying the `PIP_SRC` variable we ca
 
 ## 📝 Rearrangement Task Description
 
-<img src="https://ai2thor.allenai.org/docs/assets/rearrangement/cover.svg" alt="Object Rearrangement Example" width="100%">
+<img src="https://ai2thor.allenai.org/static/0f682c0103df1060810ad214c4668718/06655/rearrange-cover2.jpg" alt="Object Rearrangement Example" width="100%">
 
 **Overview 🤖.** Our rearrangement task involves moving and modifying (i.e. opening/closing) randomly placed objects within a room
 to obtain a goal configuration. There are 2 phases:
@@ -189,8 +189,8 @@ In both of these tracks, agents should make decisions based off of egocentric se
 types of sensors allowed/provided for this challenge include:
 
 <p float="left">
-    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/obs.png" alt="POV Agent Image" width="45%">
-    <img src="https://ai2thor.allenai.org/docs/assets/rearrangement/depth.svg" alt="Depth Agent Image" width="54%">
+    <img src="https://ai2thor.allenai.org/static/3b1dea7228ed5c3fab03fb5f960173eb/bc8e0/rgb-frame.png" alt="POV Agent Image" width="45%">
+    <img src="https://ai2thor.allenai.org/static/73f2a583b1636712a7a7d165ed6d768d/d79bd/depth-frame.jpg" alt="Depth Agent Image" width="54%">
 </p>
 
 1. **RGB images** - having shape `224x224x3` and an FOV of 90 degrees.  
