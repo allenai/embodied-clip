@@ -53,7 +53,7 @@ with open("README.md", "r") as f:
 
 To begin, clone this repository locally
 ```bash
-git clone git@github.com:Lucaweihs/ai2thor-rearrangement.git
+git clone git@github.com:allenai/ai2thor-rearrangement.git
 ```
 <details>
 <summary><b>See here for a summary of the most important files/directories in this repository</b> </summary> 
@@ -87,7 +87,7 @@ Here's a quick summary of the most important files/directories in this repositor
     - `sensors.py` - Sensors which provide observations to our agents during training. E.g. the
       `RGBRearrangeSensor` obtains RGB images from the environment and returns them for use by the agent. 
     - `tasks.py` - Definitions of the `UnshuffleTask`, `WalkthroughTask`, and `RearrangeTaskSampler` classes.
-      For more information on how these are used, see the [Setting up Rearrangement](#setting-up-rearrangement) 
+      For more information on how these are used, see the [Setting up Rearrangement](#-setting-up-rearrangement) 
       section.
     - `utils.py` - Standalone utility functions (e.g. computing IoU between 3D bounding boxes).
 
