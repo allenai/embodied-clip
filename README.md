@@ -27,7 +27,7 @@ with open("README.md", "r") as f:
 <li><a href="#-submitting-to-the-leaderboard">🛤️ Submitting to the Leaderboard</a></li>
 <li><a href="#-allowed-observations">🖼️ Allowed Observations</a></li>
 <li><a href="#-allowed-actions">🏃 Allowed Actions</a></li>
-<li><a href="#-setting-up-rearrangement">🍽️ Setting up Rearrangement</a><ul>
+<li><a href="#%EF%B8%8F-setting-up-rearrangement">🍽️ Setting up Rearrangement</a><ul>
 <li><a href="#-learning-by-example">✨ Learning by example</a></li>
 <li><a href="#-the-rearrange-thor-environment-class">🌎 The Rearrange THOR Environment class</a></li>
 <li><a href="#-the-rearrange-task-sampler-class">🏒 The Rearrange Task Sampler class</a></li>
@@ -87,7 +87,7 @@ Here's a quick summary of the most important files/directories in this repositor
     - `sensors.py` - Sensors which provide observations to our agents during training. E.g. the
       `RGBRearrangeSensor` obtains RGB images from the environment and returns them for use by the agent. 
     - `tasks.py` - Definitions of the `UnshuffleTask`, `WalkthroughTask`, and `RearrangeTaskSampler` classes.
-      For more information on how these are used, see the [Setting up Rearrangement](#-setting-up-rearrangement) 
+      For more information on how these are used, see the [Setting up Rearrangement](#%EF%B8%8F-setting-up-rearrangement) 
       section.
     - `utils.py` - Standalone utility functions (e.g. computing IoU between 3D bounding boxes).
 
