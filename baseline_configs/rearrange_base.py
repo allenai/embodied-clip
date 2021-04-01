@@ -6,10 +6,6 @@ import gym.spaces
 import stringcase
 import torch
 import torchvision.models
-from torch import nn, cuda, optim
-from torch.optim.lr_scheduler import LambdaLR
-
-import datagen.datagen_utils as datagen_utils
 from allenact.base_abstractions.experiment_config import (
     ExperimentConfig,
     MachineParams,
@@ -20,6 +16,11 @@ from allenact.base_abstractions.sensor import SensorSuite, Sensor, ExpertActionS
 from allenact.embodiedai.preprocessors.resnet import ResNetPreprocessor
 from allenact.utils.experiment_utils import TrainingPipeline, LinearDecay, Builder
 from allenact.utils.misc_utils import partition_sequence, md5_hash_str_as_int
+from torch import nn, cuda, optim
+from torch.optim.lr_scheduler import LambdaLR
+
+import datagen
+import datagen.datagen_utils as datagen_utils
 from rearrange.baseline_models import (
     RearrangeActorCriticSimpleConvRNN,
     ResNetRearrangeActorCriticRNN,

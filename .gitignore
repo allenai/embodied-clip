@@ -3,6 +3,7 @@ data
 
 # Other data
 *.json
+*.json.gz
 
 *.patch
 rearrange_out
