@@ -1,11 +1,11 @@
 from typing import Tuple, Sequence, Optional, Dict, Any
 
 import torch
+
 from allenact.algorithms.onpolicy_sync.losses.imitation import Imitation
 from allenact.base_abstractions.sensor import ExpertActionSensor
 from allenact.utils.experiment_utils import PipelineStage
 from allenact.utils.misc_utils import all_unique
-
 from baseline_configs.one_phase.one_phase_rgb_base import (
     OnePhaseRGBBaseExperimentConfig,
 )

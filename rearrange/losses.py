@@ -1,6 +1,7 @@
 from typing import cast, Dict, Any
 
 import torch
+
 from allenact.algorithms.onpolicy_sync.losses import PPO
 from allenact.algorithms.onpolicy_sync.losses.abstract_loss import (
     AbstractActorCriticLoss,

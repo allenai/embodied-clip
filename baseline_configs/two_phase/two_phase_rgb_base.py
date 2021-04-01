@@ -1,11 +1,12 @@
 from abc import ABC
-from typing import Optional, Sequence, Dict, Type
+from typing import Optional, Sequence, Dict, Type, Union
 
 import gym
 import gym.spaces
-from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
+import gym.spaces
 from torch import nn
 
+from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
 from baseline_configs.rearrange_base import RearrangeBaseExperimentConfig
 from rearrange.baseline_models import (
     TwoPhaseRearrangeActorCriticSimpleConvRNN,
@@ -36,7 +37,7 @@ class TwoPhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
         InWalkthroughPhaseSensor(),
     ]
 
-    TRAIN_UNSHUFFLE_REPEATS: int = 5
+    TRAIN_UNSHUFFLE_RUNS_PER_WALKTHROUGH: int = 1
     IS_WALKTHROUGH_PHASE_EMBEDING_DIM: int = 32
     RNN_TYPE: str = "LSTM"
 
@@ -47,15 +48,19 @@ class TwoPhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
         force_cache_reset: bool,
         allowed_scenes: Optional[Sequence[str]],
         seed: int,
+        epochs: Union[str, float, int],
         scene_to_allowed_rearrange_inds: Optional[Dict[str, Sequence[int]]] = None,
         x_display: Optional[str] = None,
         sensors: Optional[Sequence[Sensor]] = None,
-        disable_unshuffle_repeats: bool = False,
+        only_one_unshuffle_per_walkthrough: bool = False,
+        thor_controller_kwargs: Optional[Dict] = None,
         **kwargs,
     ) -> RearrangeTaskSampler:
         """Return a RearrangeTaskSampler."""
         if "mp_ctx" in kwargs:
             del kwargs["mp_ctx"]
+        assert not cls.RANDOMIZE_START_ROTATION_DURING_TRAINING
+
         return RearrangeTaskSampler.from_fixed_dataset(
             run_walkthrough_phase=True,
             run_unshuffle_phase=True,
@@ -68,6 +73,9 @@ class TwoPhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
                 controller_kwargs={
                     "x_display": x_display,
                     **cls.THOR_CONTROLLER_KWARGS,
+                    **(
+                        {} if thor_controller_kwargs is None else thor_controller_kwargs
+                    ),
                     "renderDepthImage": any(
                         isinstance(s, DepthSensor) for s in cls.SENSORS
                     ),
@@ -81,9 +89,10 @@ class TwoPhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
             discrete_actions=cls.actions(),
             require_done_action=cls.REQUIRE_DONE_ACTION,
             force_axis_aligned_start=cls.FORCE_AXIS_ALIGNED_START,
-            unshuffle_repeats=cls.TRAIN_UNSHUFFLE_REPEATS
-            if (not disable_unshuffle_repeats) and stage == "train"
+            unshuffle_runs_per_walkthrough=cls.TRAIN_UNSHUFFLE_RUNS_PER_WALKTHROUGH
+            if (not only_one_unshuffle_per_walkthrough) and stage == "train"
             else None,
+            epochs=epochs,
             **kwargs,
         )
 

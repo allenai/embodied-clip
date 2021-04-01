@@ -27,6 +27,7 @@ with open("README.md", "r") as f:
 <li><a href="#-submitting-to-the-leaderboard">🛤️ Submitting to the Leaderboard</a></li>
 <li><a href="#-allowed-observations">🖼️ Allowed Observations</a></li>
 <li><a href="#-allowed-actions">🏃 Allowed Actions</a></li>
+<li><a href="#-setting-up-rearrangement">🍽️ Setting up Rearrangement</a><ul>
 <li><a href="#%EF%B8%8F-setting-up-rearrangement">🍽️ Setting up Rearrangement</a><ul>
 <li><a href="#-learning-by-example">✨ Learning by example</a></li>
 <li><a href="#-the-rearrange-thor-environment-class">🌎 The Rearrange THOR Environment class</a></li>
@@ -180,7 +181,7 @@ be used for evaluation.
 ## 🛤️ Submitting to the Leaderboard
 
 We will be tracking challenge participant entries using the [AI2 Leaderboard](https://leaderboard.allenai.org/).
-Submissions will be opened around March 1st and a submission link will be provided in this section along with
+Submissions will be opened soon and a submission link will be provided in this section along with
 instructions on the expected format for submissions.
 
 ## 🖼️ Allowed Observations
@@ -222,7 +223,7 @@ A total of 82 actions are available to our agents, these include:
     This action results in the agent picking up a visible object of type `OBJECT_TYPE` if: (a) the agent is not already
   holding an object, (b) the agent is close enough to the object (within 1.5m), and picking up the object would not
   result in it colliding with objects in front of the agent. If there are multiple objects of type `OBJECT_TYPE`
-  then one is chosen at random.
+  then the object closest to the agent is chosen.
   
 * `Open[OBJECT_TYPE]` - Where `OBJECT_TYPE` is one of the 10 opennable object types that are not also
   pickupable, see `constants.py`. If an object whose openness is different from the openness in the goal

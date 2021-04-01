@@ -1,7 +1,6 @@
 from typing import Optional, Sequence, Dict
 
 from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
-
 from baseline_configs.rearrange_base import RearrangeBaseExperimentConfig
 from rearrange.sensors import UnshuffledRGBRearrangeSensor
 from rearrange.tasks import RearrangeTaskSampler
@@ -23,6 +22,33 @@ class WalkthroughBaseExperimentConfig(RearrangeBaseExperimentConfig):
         RearrangeBaseExperimentConfig.UNSHUFFLED_RGB_RESNET_UUID
     )
 
+    THOR_CONTROLLER_KWARGS = {
+        **RearrangeBaseExperimentConfig.THOR_CONTROLLER_KWARGS,
+        "snapToGrid": False,
+    }
+    FORCE_AXIS_ALIGNED_START = False
+    RANDOMIZE_START_ROTATION_DURING_TRAINING = True
+
+    @classmethod
+    def actions(cls):
+        other_move_actions = (
+            tuple()
+            if not cls.INCLUDE_OTHER_MOVE_ACTIONS
+            else ("move_left", "move_right", "move_back",)
+        )
+        return (
+            ("done", "move_ahead",)
+            + other_move_actions
+            + (
+                "rotate_right",
+                "rotate_left",
+                "stand",
+                "crouch",
+                "look_up",
+                "look_down",
+            )
+        )
+
     @classmethod
     def make_sampler_fn(
         cls,
@@ -33,6 +59,7 @@ class WalkthroughBaseExperimentConfig(RearrangeBaseExperimentConfig):
         scene_to_allowed_rearrange_inds: Optional[Dict[str, Sequence[int]]] = None,
         x_display: Optional[str] = None,
         sensors: Optional[Sequence[Sensor]] = None,
+        thor_controller_kwargs: Optional[Dict] = None,
         **kwargs,
     ) -> RearrangeTaskSampler:
         """Return an RearrangeTaskSampler."""
@@ -50,6 +77,9 @@ class WalkthroughBaseExperimentConfig(RearrangeBaseExperimentConfig):
                 controller_kwargs={
                     "x_display": x_display,
                     **cls.THOR_CONTROLLER_KWARGS,
+                    **(
+                        {} if thor_controller_kwargs is None else thor_controller_kwargs
+                    ),
                     "renderDepthImage": any(
                         isinstance(s, DepthSensor) for s in cls.SENSORS
                     ),
@@ -63,5 +93,7 @@ class WalkthroughBaseExperimentConfig(RearrangeBaseExperimentConfig):
             discrete_actions=cls.actions(),
             require_done_action=cls.REQUIRE_DONE_ACTION,
             force_axis_aligned_start=cls.FORCE_AXIS_ALIGNED_START,
+            randomize_start_rotation=stage == "train"
+            and cls.RANDOMIZE_START_ROTATION_DURING_TRAINING,
             **kwargs,
         )

@@ -1,11 +1,12 @@
 from typing import Any, Optional, Union
 
 import gym.spaces
+import gym.spaces
 import numpy as np
+
 from allenact.base_abstractions.sensor import RGBSensor, Sensor
 from allenact.utils.misc_utils import prepare_locals_for_super
 from allenact_plugins.robothor_plugin.robothor_sensors import DepthSensorThor
-
 from rearrange.constants import STEP_SIZE
 from rearrange.environment import RearrangeTHOREnvironment
 from rearrange.tasks import (

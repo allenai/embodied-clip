@@ -17,7 +17,8 @@ task_sampler_params = TwoPhaseRGBBaseExperimentConfig.stagewise_task_sampler_arg
 two_phase_rgb_task_sampler: RearrangeTaskSampler = TwoPhaseRGBBaseExperimentConfig.make_sampler_fn(
     **task_sampler_params,
     force_cache_reset=True,  # cache used for efficiency during training, should be True during inference
-    disable_unshuffle_repeats=True,  # used for efficiency during training, should be False during inference
+    only_one_unshuffle_per_walkthrough=True,  # used for efficiency during training, should be False during inference
+    epochs=1,
 )
 
 how_many_unique_datapoints = two_phase_rgb_task_sampler.total_unique
@@ -80,8 +81,10 @@ two_phase_rgb_task_sampler.close()
 task_sampler_params = OnePhaseRGBBaseExperimentConfig.stagewise_task_sampler_args(
     stage="valid", process_ind=0, total_processes=1,
 )
-one_phase_rgb_task_sampler: RearrangeTaskSampler = OnePhaseRGBBaseExperimentConfig.make_sampler_fn(
-    **task_sampler_params, force_cache_reset=False,
+one_phase_rgb_task_sampler: RearrangeTaskSampler = (
+    OnePhaseRGBBaseExperimentConfig.make_sampler_fn(
+        **task_sampler_params, force_cache_reset=False, epochs=1,
+    )
 )
 
 how_many_unique_datapoints = one_phase_rgb_task_sampler.total_unique
@@ -129,8 +132,10 @@ print(f"\nFinished {num_tasks_to_do} One-Phase tasks.")
 task_sampler_params = OnePhaseRGBBaseExperimentConfig.stagewise_task_sampler_args(
     stage="combined", process_ind=0, total_processes=1,
 )
-one_phase_rgb_combined_task_sampler: RearrangeTaskSampler = OnePhaseRGBBaseExperimentConfig.make_sampler_fn(
-    **task_sampler_params, force_cache_reset=True,
+one_phase_rgb_combined_task_sampler: RearrangeTaskSampler = (
+    OnePhaseRGBBaseExperimentConfig.make_sampler_fn(
+        **task_sampler_params, force_cache_reset=True, epochs=1,
+    )
 )
 
 how_many_unique_datapoints = one_phase_rgb_combined_task_sampler.total_unique

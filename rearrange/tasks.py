@@ -10,12 +10,12 @@ import compress_pickle
 import gym.spaces
 import numpy as np
 import stringcase
+
 from allenact.base_abstractions.misc import RLStepResult
 from allenact.base_abstractions.sensor import SensorSuite
 from allenact.base_abstractions.task import Task, TaskSampler
 from allenact.utils.system import get_logger
 from allenact_plugins.ithor_plugin.ithor_util import round_to_factor
-
 from rearrange.constants import STARTER_DATA_DIR, STEP_SIZE
 from rearrange.environment import (
     RearrangeTHOREnvironment,
@@ -223,19 +223,26 @@ class UnshuffleTask(AbstractRearrangeTask):
             task_info["gps_vs_cps"] = self.unshuffle_env.compare_poses(gps, cps)
             task_info["ips_vs_cps"] = self.unshuffle_env.compare_poses(ips, cps)
             task_info["gps_vs_ips"] = self.unshuffle_env.compare_poses(gps, ips)
-            task_info["actions"] = self.actions_taken
-            task_info["actions_success"] = self.actions_taken_success
-            task_info["agent_locs"] = self.agent_locs
+
+        task_info["unshuffle_actions"] = self.actions_taken
+        task_info["unshuffle_action_successes"] = self.actions_taken_success
+        task_info["unique_id"] = self.unshuffle_env.current_task_spec.unique_id
 
         if self.metrics_from_walkthrough is not None:
             mes = {**self.metrics_from_walkthrough}
-            del mes["task_info"]  # Already summarized by the unshuffle task info
+            task_info["walkthrough_actions"] = mes["task_info"]["walkthrough_actions"]
+            task_info["walkthrough_action_successes"] = mes["task_info"][
+                "walkthrough_action_successes"
+            ]
+            del mes[
+                "task_info"
+            ]  # Otherwise already summarized by the unshuffle task info
 
             metrics = {
                 "task_info": task_info,
-                "ep_length": metrics["ep_length"] + mes["ep_length"],
+                "ep_length": metrics["ep_length"] + mes["walkthrough/ep_length"],
                 **{f"unshuffle/{k}": v for k, v in metrics.items()},
-                **{f"walkthrough/{k}": v for k, v in mes.items()},
+                **mes,
             }
         else:
             metrics = {
@@ -266,7 +273,7 @@ class UnshuffleTask(AbstractRearrangeTask):
             and self.unshuffle_env.all_rearranged_or_broken
         )
 
-    def _judge(self, action_name: str) -> float:
+    def _judge(self) -> float:
         """Return the reward from a new (s, a, s')."""
         # TODO: Log reward scenarios.
 
@@ -309,14 +316,20 @@ class UnshuffleTask(AbstractRearrangeTask):
                         for o in metadata["objects"]
                         if o["visible"] and o["objectType"] == object_type
                     ]
+
+                    possible_objects = sorted(
+                        possible_objects, key=lambda po: (po["distance"], po["name"])
+                    )
                     object_before = None
                     if len(possible_objects) > 0:
-                        object_before = random.choice(possible_objects)
+                        object_before = possible_objects[0]
                         object_id = object_before["objectId"]
 
                     if object_before is not None:
                         self.unshuffle_env.controller.step(
-                            "PickupObject", objectId=object_id
+                            "PickupObject",
+                            objectId=object_id,
+                            **self.unshuffle_env.physics_step_kwargs,
                         )
                         action_success = self.unshuffle_env.last_event.metadata[
                             "lastActionSuccess"
@@ -324,64 +337,12 @@ class UnshuffleTask(AbstractRearrangeTask):
                     else:
                         action_success = False
 
-                    if action_success:
-                        cur_metadata = self.unshuffle_env.last_event.metadata
-                        picked_up_objects = [
-                            o for o in cur_metadata["objects"] if o["isPickedUp"]
-                        ]
-                        if len(picked_up_objects) == 0:
-                            action_success = False
-                        elif len(picked_up_objects) > 1:
-                            # TODO: It seems possible to pickup more than a single object in rare cases.
-                            #   Here we teleport any extraneously picked up objects back to their original locations.
-                            get_logger().warning(
-                                f"In scene {self.unshuffle_env.scene}:"
-                                f" should not be able to hold more than one object."
-                                f"\n\nCurrently holding {picked_up_objects}."
-                                f"\n\nTask spec {self.unshuffle_env.current_task_spec}."
-                            )
-                            before_pickup_md = metadata
-                            invalid_object_ids = {
-                                o["objectId"]
-                                for o in picked_up_objects
-                                if o["objectId"] != object_id
-                            }
-
-                            def drop_objects_and_teleport_back_them_to_original_locations(
-                                object_ids,
-                            ):
-                                cur_metadata = self.unshuffle_env.controller.step(
-                                    "DropHandObject", forceAction=True
-                                ).metadata
-                                assert cur_metadata["lastActionSuccess"]
-                                for obj in before_pickup_md["objects"]:
-                                    if obj["objectId"] in object_ids:
-                                        self.unshuffle_env.controller.step(
-                                            "TeleportObject",
-                                            objectId=obj["objectId"],
-                                            position=obj["position"],
-                                            rotation=obj["rotation"],
-                                            forceAction=True,
-                                        )
-
-                            self.unshuffle_env.controller.step("PausePhysicsAutoSim")
-                            drop_objects_and_teleport_back_them_to_original_locations(
-                                invalid_object_ids
-                            )
-                            cur_metadata = self.unshuffle_env.controller.step(
-                                "PickupObject", objectId=object_id, forceAction=True
-                            ).metadata
-                            held_object_ids = [
-                                o["objectId"]
-                                for o in cur_metadata["objects"]
-                                if o["isPickedUp"]
-                            ]
-                            if len(held_object_ids) != 1:
-                                drop_objects_and_teleport_back_them_to_original_locations(
-                                    held_object_ids
-                                )
-                                action_success = False
-                            self.unshuffle_env.controller.step("UnpausePhysicsAutoSim")
+                    if action_success and self.unshuffle_env.held_object is None:
+                        get_logger().warning(
+                            f"`PickupObject` was successful in picking up {object_id} but we're not holding"
+                            f" any objects! Current task spec:\n{self.unshuffle_env.current_task_spec}."
+                        )
+                        action_success = False
 
         elif action_name.startswith("open_by_type"):
             object_type = stringcase.pascalcase(
@@ -414,12 +375,17 @@ class UnshuffleTask(AbstractRearrangeTask):
 
                     if cur_pose["openness"] > 0.0:
                         self.unshuffle_env.controller.step(
-                            "CloseObject", objectId=object_id,
+                            "CloseObject",
+                            objectId=object_id,
+                            **self.unshuffle_env.physics_step_kwargs,
                         )
                     # NOTE: 'moveMagnitude' is 'openness' with the open object action.
                     # This is not a typo here.
                     self.unshuffle_env.controller.step(
-                        "OpenObject", objectId=object_id, moveMagnitude=goal_openness
+                        "OpenObject",
+                        objectId=object_id,
+                        moveMagnitude=goal_openness,
+                        **self.unshuffle_env.physics_step_kwargs,
                     )
                     action_success = self.unshuffle_env.last_event.metadata[
                         "lastActionSuccess"
@@ -436,6 +402,8 @@ class UnshuffleTask(AbstractRearrangeTask):
         elif action_name == "done":
             self._took_end_action = True
             action_success = True
+        elif action_name == "pass":
+            action_success = True
         else:
             raise RuntimeError(
                 f"Action '{action_name}' is not in the action space {RearrangeActionSpace}"
@@ -447,7 +415,7 @@ class UnshuffleTask(AbstractRearrangeTask):
             self.agent_locs.append(self.unshuffle_env.get_agent_location())
         return RLStepResult(
             observation=None,
-            reward=self._judge(action_name),
+            reward=self._judge(),
             done=self.is_done(),
             info={"action_name": action_name, "action_success": action_success},
         )
@@ -485,6 +453,9 @@ class WalkthroughTask(AbstractRearrangeTask):
         self.disable_metrics = disable_metrics
 
         self._took_end_action: bool = False
+
+        self.actions_taken = []
+        self.actions_taken_success = []
 
         self.visited_positions_xzrsh = {self.agent_location_tuple}
         self.visited_positions_xz = {self.agent_location_tuple[:2]}
@@ -533,8 +504,14 @@ class WalkthroughTask(AbstractRearrangeTask):
 
         n_obj_seen = len(self.seen_openable_objects) + len(self.seen_pickupable_objects)
 
+        metrics = super().metrics()
+        metrics["task_info"]["walkthrough_actions"] = self.actions_taken
+        metrics["task_info"][
+            "walkthrough_action_successes"
+        ] = self.actions_taken_success
+
         metrics = {
-            **super().metrics(),
+            **metrics,
             **{
                 "num_explored_xz": len(self.visited_positions_xz),
                 "num_explored_xzr": len(visited_xzr),
@@ -545,7 +522,9 @@ class WalkthroughTask(AbstractRearrangeTask):
             },
         }
 
-        return metrics
+        return {
+            f"walkthrough/{k}" if k != "task_info" else k: v for k, v in metrics.items()
+        }
 
     def class_action_names(self, **kwargs) -> Tuple[str, ...]:
         """Return the easy, simplified task's class names."""
@@ -595,47 +574,38 @@ class WalkthroughTask(AbstractRearrangeTask):
 
     def _judge(self, action_name: str, action_success: bool) -> float:
         """Return the reward from a new (s, a, s')."""
-        reward = 0
+        total_seen_before = len(self.seen_pickupable_objects) + len(
+            self.seen_openable_objects
+        )
+        prop_seen_before = (
+            total_seen_before
+        ) / self.total_pickupable_or_openable_objects
 
-        if not action_success:
-            reward -= 0.01
-
-        # Seen openable obj reward
-        seen_obj_reward = 0
+        # Updating seen openable
         for obj in self.openable_not_pickupable_objects(visible_only=True):
             if obj["name"] not in self.seen_openable_objects:
                 self.seen_openable_objects.add(obj["name"])
-                seen_obj_reward += 0.1
-        reward += min(0.3, seen_obj_reward)
 
-        # Seen pickupable obj reward
-        seen_obj_reward = 0
+        # Updating seen pickupable
         for obj in self.pickupable_objects(visible_only=True):
             if obj["name"] not in self.seen_pickupable_objects:
                 self.seen_pickupable_objects.add(obj["name"])
-                seen_obj_reward += 0.1
-        reward += min(0.3, seen_obj_reward)
 
-        # Entered new location reward
+        # Updating visited locations
         agent_loc_tuple = self.agent_location_tuple
         self.visited_positions_xzrsh.add(agent_loc_tuple)
         if agent_loc_tuple[:2] not in self.visited_positions_xz:
             self.visited_positions_xz.add(agent_loc_tuple[:2])
-            reward += 0.01
 
-        if self.is_done() or self.num_steps_taken() + 1 >= self.max_steps:
-            prop_seen = (
-                len(self.seen_pickupable_objects) + len(self.seen_openable_objects)
-            ) / self.total_pickupable_or_openable_objects
+        total_seen_after = len(self.seen_pickupable_objects) + len(
+            self.seen_openable_objects
+        )
+        prop_seen_after = total_seen_after / self.total_pickupable_or_openable_objects
 
-            if prop_seen >= 0.95:
-                reward += 10 if self._took_end_action else 5
-            elif prop_seen >= 0.9:
-                reward += 1
-            elif prop_seen >= 0.8:
-                reward -= 1
-            else:
-                reward -= 2
+        reward = 5 * (prop_seen_after - prop_seen_before)
+
+        if self._took_end_action and prop_seen_after > 0.5:
+            reward += 5 * (prop_seen_after + (prop_seen_after > 0.98))
 
         return reward
 
@@ -672,6 +642,9 @@ class WalkthroughTask(AbstractRearrangeTask):
             raise RuntimeError(
                 f"Action '{action_name}' is not in the action space {RearrangeActionSpace}"
             )
+
+        self.actions_taken.append(action_name)
+        self.actions_taken_success.append(action_success)
 
         return RLStepResult(
             observation=self.get_observations(),
@@ -794,7 +767,7 @@ class RearrangeTaskSampler(TaskSampler):
         force_axis_aligned_start: bool,
         epochs: Union[int, float, str] = "default",
         seed: Optional[int] = None,
-        unshuffle_repeats: Optional[int] = None,
+        unshuffle_runs_per_walkthrough: Optional[int] = None,
         task_spec_in_metrics: bool = False,
     ) -> None:
         assert isinstance(run_walkthrough_phase, bool) and isinstance(
@@ -808,17 +781,15 @@ class RearrangeTaskSampler(TaskSampler):
             run_walkthrough_phase or run_unshuffle_phase
         ), "One of `run_walkthrough_phase` or `run_unshuffle_phase` must be `True`."
 
-        assert (unshuffle_repeats is None) or (
+        assert (unshuffle_runs_per_walkthrough is None) or (
             run_walkthrough_phase and run_unshuffle_phase
         ), (
-            "`unshuffle_repeats` should be `None` if either `run_walkthrough_phase` or"
+            "`unshuffle_runs_per_walkthrough` should be `None` if either `run_walkthrough_phase` or"
             " `run_unshuffle_phase` is `False`."
         )
         assert (
-            unshuffle_repeats is None
-        ) or unshuffle_repeats >= 1, (
-            f"`unshuffle_repeats` (=={unshuffle_repeats}) must be >= 1."
-        )
+            unshuffle_runs_per_walkthrough is None
+        ) or unshuffle_runs_per_walkthrough >= 1, f"`unshuffle_runs_per_walkthrough` (=={unshuffle_runs_per_walkthrough}) must be >= 1."
 
         self.run_walkthrough_phase = run_walkthrough_phase
         self.run_unshuffle_phase = run_unshuffle_phase
@@ -827,8 +798,12 @@ class RearrangeTaskSampler(TaskSampler):
         self.stage = stage
         self.main_seed = seed if seed is not None else random.randint(0, 2 * 30 - 1)
 
-        self.unshuffle_repeats = 1 if unshuffle_repeats is None else unshuffle_repeats
-        self.cur_unshuffle_repeat_count = 0
+        self.unshuffle_runs_per_walkthrough = (
+            1
+            if unshuffle_runs_per_walkthrough is None
+            else unshuffle_runs_per_walkthrough
+        )
+        self.cur_unshuffle_runs_count = 0
 
         self.task_spec_in_metrics = task_spec_in_metrics
 
@@ -873,19 +848,27 @@ class RearrangeTaskSampler(TaskSampler):
         stage: str,
         allowed_scenes: Optional[Sequence[str]] = None,
         scene_to_allowed_rearrange_inds: Optional[Dict[str, Sequence[int]]] = None,
+        randomize_start_rotation: bool = False,
         **init_kwargs,
     ):
+        scenes_to_task_spec_dicts = cls._filter_scenes_to_task_spec_dicts(
+            scenes_to_task_spec_dicts=cls.load_rearrange_data_from_path(
+                stage=stage, base_dir=STARTER_DATA_DIR
+            ),
+            allowed_scenes=allowed_scenes,
+            scene_to_allowed_rearrange_inds=scene_to_allowed_rearrange_inds,
+        )
+        if randomize_start_rotation:
+            random_gen = random.Random(1)
+            for scene in sorted(scenes_to_task_spec_dicts.keys()):
+                for task_spec_dict in scenes_to_task_spec_dicts[scene]:
+                    task_spec_dict["agent_rotation"] = 360.0 * random_gen.random()
+
         return cls(
             run_walkthrough_phase=run_walkthrough_phase,
             run_unshuffle_phase=run_unshuffle_phase,
             stage=stage,
-            scenes_to_task_spec_dicts=cls._filter_scenes_to_task_spec_dicts(
-                scenes_to_task_spec_dicts=cls.load_rearrange_data_from_path(
-                    stage=stage, base_dir=STARTER_DATA_DIR
-                ),
-                allowed_scenes=allowed_scenes,
-                scene_to_allowed_rearrange_inds=scene_to_allowed_rearrange_inds,
-            ),
+            scenes_to_task_spec_dicts=scenes_to_task_spec_dicts,
             **init_kwargs,
         )
 
@@ -921,7 +904,7 @@ class RearrangeTaskSampler(TaskSampler):
         scenes_to_task_spec_dicts: Dict[str, List[Dict[str, Any]]],
         allowed_scenes: Optional[Sequence[str]],
         scene_to_allowed_rearrange_inds: Optional[Dict[str, Sequence[int]]],
-    ):
+    ) -> Dict[str, List[Dict[str, Any]]]:
         if allowed_scenes is not None:
             scenes_to_task_spec_dicts = {
                 scene: scenes_to_task_spec_dicts[scene] for scene in allowed_scenes
@@ -947,7 +930,7 @@ class RearrangeTaskSampler(TaskSampler):
         if stage == "valid":
             stage = "val"
 
-        data_path = os.path.join(base_dir, f"{stage}.pkl.gz")
+        data_path = os.path.abspath(os.path.join(base_dir, f"{stage}.pkl.gz"))
         if not os.path.exists(data_path):
             raise RuntimeError(f"No data at path {data_path}")
 
@@ -970,14 +953,14 @@ class RearrangeTaskSampler(TaskSampler):
         if count == 1:
             return self.task_spec_iterator.length
         elif count == 2:
-            mult = self.unshuffle_repeats
+            mult = self.unshuffle_runs_per_walkthrough
             count = (1 + mult) * self.task_spec_iterator.length
 
             if self.last_sampled_task is not None and (
                 isinstance(self.last_sampled_task, WalkthroughTask)
-                or self.cur_unshuffle_repeat_count < mult
+                or self.cur_unshuffle_runs_count < mult
             ):
-                count += mult - self.cur_unshuffle_repeat_count
+                count += mult - self.cur_unshuffle_runs_count
 
             return count
         else:
@@ -1012,7 +995,7 @@ class RearrangeTaskSampler(TaskSampler):
     def reset(self) -> None:
         """Restart the unshuffle iteration setup order."""
         self.task_spec_iterator.reset()
-        self.cur_unshuffle_repeat_count = 0
+        self.cur_unshuffle_runs_count = 0
         self._last_sampled_task = None
         self._last_sampled_walkthrough_task = None
 
@@ -1027,15 +1010,18 @@ class RearrangeTaskSampler(TaskSampler):
         else:
             return self.walkthrough_env.current_task_spec
 
-    def next_task(self, **kwargs) -> Optional[UnshuffleTask]:
+    def next_task(
+        self, forced_task_spec: Optional[RearrangeTaskSpec] = None, **kwargs
+    ) -> Optional[UnshuffleTask]:
         """Return a fresh UnshuffleTask setup."""
 
         walkthrough_finished_and_should_run_unshuffle = (
-            self.run_unshuffle_phase
+            forced_task_spec is None
+            and self.run_unshuffle_phase
             and self.run_walkthrough_phase
             and (
                 self.was_in_exploration_phase
-                or self.cur_unshuffle_repeat_count < self.unshuffle_repeats
+                or self.cur_unshuffle_runs_count < self.unshuffle_runs_per_walkthrough
             )
         )
 
@@ -1043,12 +1029,16 @@ class RearrangeTaskSampler(TaskSampler):
             self.last_sampled_task is None
             or not walkthrough_finished_and_should_run_unshuffle
         ):
-            self.cur_unshuffle_repeat_count = 0
+            self.cur_unshuffle_runs_count = 0
 
             try:
-                task_spec: RearrangeTaskSpec = next(self.task_spec_iterator)
+                if forced_task_spec is None:
+                    task_spec: RearrangeTaskSpec = next(self.task_spec_iterator)
+                else:
+                    task_spec = forced_task_spec
             except StopIteration:
-                return None
+                self._last_sampled_task = None
+                return self._last_sampled_task
 
             runtime_sample = task_spec.runtime_sample
 
@@ -1111,7 +1101,7 @@ class RearrangeTaskSampler(TaskSampler):
                     )
                     self._last_sampled_walkthrough_task = self._last_sampled_task
                 else:
-                    self.cur_unshuffle_repeat_count += 1
+                    self.cur_unshuffle_runs_count += 1
                     self._last_sampled_task = UnshuffleTask(
                         sensors=self.sensors,
                         unshuffle_env=self.unshuffle_env,
@@ -1133,14 +1123,14 @@ class RearrangeTaskSampler(TaskSampler):
                 else:
                     raise e
         else:
-            self.cur_unshuffle_repeat_count += 1
+            self.cur_unshuffle_runs_count += 1
             self.was_in_exploration_phase = False
 
             walkthrough_task = cast(
                 WalkthroughTask, self._last_sampled_walkthrough_task
             )
 
-            if self.cur_unshuffle_repeat_count != 1:
+            if self.cur_unshuffle_runs_count != 1:
                 self.unshuffle_env.reset(
                     task_spec=self.unshuffle_env.current_task_spec,
                     force_axis_aligned_start=self.force_axis_aligned_start,

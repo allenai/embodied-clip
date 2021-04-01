@@ -1,7 +1,7 @@
-from baseline_configs.one_phase.one_phase_rgb_ppo import OnePhasePPORGBExperimentConfig
+from baseline_configs.one_phase.one_phase_rgb_ppo import OnePhaseRGBPPOExperimentConfig
 
 
-class OnePhasePPORGBResNetExperimentConfig(OnePhasePPORGBExperimentConfig):
+class OnePhaseRGBResNetPPOExperimentConfig(OnePhaseRGBPPOExperimentConfig):
     USE_RESNET_CNN = True
 
     @classmethod
