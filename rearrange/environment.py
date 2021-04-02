@@ -428,7 +428,6 @@ class RearrangeTHOREnvironment:
             error_message=(
                 "x/y/openness must be in [0:1] and we must be in the unshuffle phase."
             ),
-            updated_kwarg_names={"openness": "moveMagnitude"},
             x=x,
             y=y,
             openness=openness,
@@ -1349,7 +1348,7 @@ class RearrangeTHOREnvironment:
                 self.controller.step(
                     action="OpenObject",
                     objectId=current_obj_info["objectId"],
-                    moveMagnitude=obj["target_openness"],
+                    openness=obj["target_openness"],
                     forceAction=True,
                     **self.physics_step_kwargs,
                 )
@@ -1501,7 +1500,7 @@ class RearrangeTHOREnvironment:
                 self.controller.step(
                     action="OpenObject",
                     objectId=current_obj_info["objectId"],
-                    moveMagnitude=obj["start_openness"],
+                    openness=obj["start_openness"],
                     forceAction=True,
                     **(
                         self.physics_step_kwargs

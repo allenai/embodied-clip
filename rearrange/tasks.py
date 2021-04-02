@@ -379,12 +379,11 @@ class UnshuffleTask(AbstractRearrangeTask):
                             objectId=object_id,
                             **self.unshuffle_env.physics_step_kwargs,
                         )
-                    # NOTE: 'moveMagnitude' is 'openness' with the open object action.
-                    # This is not a typo here.
+
                     self.unshuffle_env.controller.step(
                         "OpenObject",
                         objectId=object_id,
-                        moveMagnitude=goal_openness,
+                        openness=goal_openness,
                         **self.unshuffle_env.physics_step_kwargs,
                     )
                     action_success = self.unshuffle_env.last_event.metadata[

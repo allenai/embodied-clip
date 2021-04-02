@@ -59,7 +59,7 @@ def open_objs(
         controller.step(
             "OpenObject",
             objectId=obj["objectId"],
-            moveMagnitude=new_openness,
+            openness=new_openness,
             forceAction=True,
         )
         out[obj["name"]] = new_openness

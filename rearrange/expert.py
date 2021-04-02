@@ -719,7 +719,7 @@ class GreedyUnshuffleExpert:
                     return dict(
                         action="OpenByType",
                         objectId=obj_pose_to_go_to["objectId"],
-                        moveMagnitude=goal_obj_pos["openness"],
+                        openness=goal_obj_pos["openness"],
                     )
                 elif obj_pose_to_go_to["pickupable"]:
                     return dict(
