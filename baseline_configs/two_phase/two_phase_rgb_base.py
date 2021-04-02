@@ -3,10 +3,9 @@ from typing import Optional, Sequence, Dict, Type, Union
 
 import gym
 import gym.spaces
-import gym.spaces
+from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
 from torch import nn
 
-from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
 from baseline_configs.rearrange_base import RearrangeBaseExperimentConfig
 from rearrange.baseline_models import (
     TwoPhaseRearrangeActorCriticSimpleConvRNN,
