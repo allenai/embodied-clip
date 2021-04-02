@@ -1,4 +1,4 @@
-ai2thor==2.7.2
+ai2thor>=2.7.2,<2.8.0
 allenact
 allenact_plugins[ithor]
 numpy

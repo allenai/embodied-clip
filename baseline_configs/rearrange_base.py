@@ -1,3 +1,4 @@
+import copy
 from abc import abstractmethod
 from typing import Optional, List, Sequence, Dict, Any
 
@@ -18,7 +19,7 @@ from allenact.utils.misc_utils import partition_sequence, md5_hash_str_as_int
 from torch import nn, cuda, optim
 from torch.optim.lr_scheduler import LambdaLR
 
-import datagen.datagen_utils
+import datagen
 import datagen.datagen_utils as datagen_utils
 from rearrange.baseline_models import (
     RearrangeActorCriticSimpleConvRNN,
@@ -37,16 +38,19 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
     MAX_STEPS = {"walkthrough": 250, "unshuffle": 500}
     REQUIRE_DONE_ACTION = True
     FORCE_AXIS_ALIGNED_START = True
+    RANDOMIZE_START_ROTATION_DURING_TRAINING = False
 
     # Environment parameters
     REARRANGE_ENV_KWARGS = dict(mode=RearrangeMode.SNAP,)
     SCREEN_SIZE = 224
     THOR_CONTROLLER_KWARGS = {
         "rotateStepDegrees": 90,
+        "snapToGrid": True,
         "quality": "Very Low",
         "width": SCREEN_SIZE,
         "height": SCREEN_SIZE,
         "commit_id": THOR_COMMIT_ID,
+        "fastActionEmit": True,
     }
     INCLUDE_OTHER_MOVE_ACTIONS = True
 
@@ -167,7 +171,7 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
             devices = [num_gpus - 1] if has_gpu else [torch.device("cpu")]
             nprocesses = 2 if has_gpu else 0
         else:
-            nprocesses = 40 if has_gpu else 1
+            nprocesses = 20 if has_gpu else 1
             devices = (
                 list(range(min(nprocesses, num_gpus)))
                 if has_gpu
@@ -231,10 +235,15 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
             }
         seed = md5_hash_str_as_int(str(allowed_scenes))
 
+        device = (
+            devices[process_ind % len(devices)]
+            if devices is not None and len(devices) > 0
+            else torch.device("cpu")
+        )
         x_display = (
             None
-            if devices is None or len(devices) is None
-            else "0.{}".format(devices[process_ind % len(devices)])
+            if device is None or device == torch.device("cpu")
+            else "0.{}".format(device)
         )
         kwargs = {
             "stage": stage,
@@ -243,10 +252,16 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
             "seed": seed,
             "x_display": x_display,
         }
+
+        sensors = kwargs.get("sensors", copy.deepcopy(cls.SENSORS))
+        kwargs["sensors"] = sensors
+
         if stage != "train":
-            # Don't include the expert action sensor during training
+            # Don't include some sensors during validation/testing
             kwargs["sensors"] = [
-                s for s in cls.SENSORS if not isinstance(s, ExpertActionSensor)
+                s
+                for s in kwargs["sensors"]
+                if not isinstance(s, (ExpertActionSensor,),)
             ]
         return kwargs
 
@@ -259,9 +274,9 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
         seeds: Optional[List[int]] = None,
         deterministic_cudnn: bool = False,
     ):
-
         return dict(
             force_cache_reset=False,
+            epochs=float("inf"),
             **cls.stagewise_task_sampler_args(
                 stage="train",
                 process_ind=process_ind,
@@ -283,6 +298,7 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
     ):
         return dict(
             force_cache_reset=True,
+            epochs=1,
             **cls.stagewise_task_sampler_args(
                 stage="valid",
                 allowed_rearrange_inds_subset=tuple(range(10)),
@@ -302,6 +318,7 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
         devices: Optional[List[int]] = None,
         seeds: Optional[List[int]] = None,
         deterministic_cudnn: bool = False,
+        task_spec_in_metrics: bool = False,
     ):
         task_spec_in_metrics = False
 
@@ -323,6 +340,7 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
 
         return dict(
             force_cache_reset=True,
+            epochs=1,
             task_spec_in_metrics=task_spec_in_metrics,
             **cls.stagewise_task_sampler_args(
                 stage=stage,
@@ -350,13 +368,13 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
         info = cls._training_pipeline_info()
 
         return TrainingPipeline(
-            gamma=0.99,
-            use_gae=True,
-            gae_lambda=0.95,
+            gamma=info.get("gamma", 0.99),
+            use_gae=info.get("use_gae", True),
+            gae_lambda=info.get("gae_lambda", 0.95),
             num_steps=info["num_steps"],
             num_mini_batch=info["num_mini_batch"],
             update_repeats=info["update_repeats"],
-            max_grad_norm=0.5,
+            max_grad_norm=info.get("max_grad_norm", 0.5),
             save_interval=cls.SAVE_INTERVAL,
             named_losses=info["named_losses"],
             metric_accumulate_interval=cls.num_train_processes()

@@ -4,11 +4,12 @@ from pathlib import Path
 MAX_HAND_METERS = 0.5
 FOV = 90
 
-REQUIRED_THOR_VERSION = ">=2.7.2"
+REQUIRED_THOR_VERSION = "2.7.2"
 STARTER_DATA_DIR = os.path.join(
     os.path.abspath(os.path.dirname(Path(__file__))), "../data"
 )
-THOR_COMMIT_ID = "5b20c5692d51c6f3c3596803c491c3da8d43eb2c"
+
+THOR_COMMIT_ID = "62bba7e2537fb6aaf2ed19125b9508c8b99bced3"
 STEP_SIZE = 0.25
 
 # fmt: off
@@ -181,3 +182,23 @@ OBJECT_TYPES_WITH_PROPERTIES = {
     "VacuumCleaner": {"openable": False, "receptacle": False, "pickupable": False}
 }
 # fmt: on
+
+PICKUPABLE_OBJECTS = list(
+    sorted(
+        [
+            object_type
+            for object_type, properties in OBJECT_TYPES_WITH_PROPERTIES.items()
+            if properties["pickupable"]
+        ]
+    )
+)
+
+OPENABLE_OBJECTS = list(
+    sorted(
+        [
+            object_type
+            for object_type, properties in OBJECT_TYPES_WITH_PROPERTIES.items()
+            if properties["openable"] and not properties["pickupable"]
+        ]
+    )
+)

@@ -3,10 +3,12 @@ data
 
 # Other data
 *.json
+*.json.gz
 
 *.patch
 rearrange_out
 experiment_output
+*_out
 
 .vscode/
 rearrange_venv/

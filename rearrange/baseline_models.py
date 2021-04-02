@@ -11,6 +11,8 @@ import gym.spaces
 import numpy as np
 import torch
 import torch.nn as nn
+from torch import Tensor
+
 from allenact.algorithms.onpolicy_sync.policy import (
     ActorCriticModel,
     DistributionType,
@@ -26,7 +28,6 @@ from allenact.base_abstractions.misc import ActorCriticOutput, Memory
 from allenact.embodiedai.models.basic_models import SimpleCNN, RNNStateEncoder
 from allenact.utils.misc_utils import prepare_locals_for_super
 from allenact.utils.model_utils import simple_conv_and_linear_weights_init
-from torch import Tensor
 
 
 class RearrangeActorCriticSimpleConvRNN(ActorCriticModel[CategoricalDistr]):
@@ -174,6 +175,9 @@ class ResNetRearrangeActorCriticRNN(RearrangeActorCriticSimpleConvRNN):
         visual_encoder = nn.Sequential(
             nn.Conv2d(3 * a, self._hidden_size, 1,), nn.ReLU(inplace=True),
         )
+        self.visual_attention.apply(simple_conv_and_linear_weights_init)
+        visual_encoder.apply(simple_conv_and_linear_weights_init)
+
         return visual_encoder
 
     def forward(  # type:ignore
@@ -378,6 +382,7 @@ class TwoPhaseRearrangeActorCriticSimpleConvRNN(ActorCriticModel[CategoricalDist
         unshuffled_img = observations[self.unshuffled_rgb_uuid]
         concat_img = torch.cat((cur_img, unshuffled_img), dim=-1)
 
+        # Various embeddings
         vis_features = self.visual_encoder({self.concat_rgb_uuid: concat_img})
         prev_action_embeddings = self.prev_action_embedder(
             ((~masks.bool()).long() * (prev_actions.unsqueeze(-1) + 1))
@@ -396,7 +401,7 @@ class TwoPhaseRearrangeActorCriticSimpleConvRNN(ActorCriticModel[CategoricalDist
         rnn_outs = []
         obs_for_rnn = torch.cat(to_cat, dim=-1)
         last_walkthrough_encoding = memory.tensor("walkthrough_encoding")
-        walkthrough_encoding: Optional[torch.Tensor] = None
+
         for step in range(masks.shape[0]):
             rnn_out, rnn_hidden_states = self.state_encoder(
                 torch.cat(
@@ -412,12 +417,12 @@ class TwoPhaseRearrangeActorCriticSimpleConvRNN(ActorCriticModel[CategoricalDist
                 last_walkthrough_encoding,
                 masks_no_unshuffle_reset[step : step + 1],
             )
-            walkthrough_encoding = (
+            last_walkthrough_encoding = (
                 last_walkthrough_encoding * in_unshuffle_float[step : step + 1]
                 + walkthrough_encoding * in_walkthrough_float[step : step + 1]
             )
 
-        memory = memory.set_tensor("walkthrough_encoding", walkthrough_encoding)
+        memory = memory.set_tensor("walkthrough_encoding", last_walkthrough_encoding)
 
         rnn_out = torch.cat(rnn_outs, dim=0)
         walkthrough_dist, walkthrough_vals = self.walkthrough_ac(rnn_out)
@@ -488,6 +493,9 @@ class ResNetTwoPhaseRearrangeActorCriticRNN(TwoPhaseRearrangeActorCriticSimpleCo
         visual_encoder = nn.Sequential(
             nn.Conv2d(3 * a, self._hidden_size, 1,), nn.ReLU(inplace=True),
         )
+        self.visual_attention.apply(simple_conv_and_linear_weights_init)
+        visual_encoder.apply(simple_conv_and_linear_weights_init)
+
         return visual_encoder
 
     def forward(  # type:ignore
@@ -504,6 +512,8 @@ class ResNetTwoPhaseRearrangeActorCriticRNN(TwoPhaseRearrangeActorCriticSimpleCo
 
         # Don't reset hidden state at start of the unshuffle task
         masks_no_unshuffle_reset = (masks.bool() | in_unshuffle_phase_mask).float()
+        masks_with_unshuffle_reset = masks.float()
+        del masks  # Just to make sure we don't accidentally use `masks when we want `masks_no_unshuffle_reset`
 
         # Visual features
         cur_img_resnet = observations[self.rgb_uuid]
@@ -533,7 +543,10 @@ class ResNetTwoPhaseRearrangeActorCriticRNN(TwoPhaseRearrangeActorCriticSimpleCo
 
         # Various embeddings
         prev_action_embeddings = self.prev_action_embedder(
-            ((~masks.bool()).long() * (prev_actions.unsqueeze(-1) + 1))
+            (
+                (~masks_with_unshuffle_reset.bool()).long()
+                * (prev_actions.unsqueeze(-1) + 1)
+            )
         ).squeeze(-2)
         is_walkthrough_phase_embedding = self.is_walkthrough_phase_embedder(
             in_walkthrough_phase_mask.long()
@@ -549,14 +562,19 @@ class ResNetTwoPhaseRearrangeActorCriticRNN(TwoPhaseRearrangeActorCriticSimpleCo
         rnn_outs = []
         obs_for_rnn = torch.cat(to_cat, dim=-1)
         last_walkthrough_encoding = memory.tensor("walkthrough_encoding")
-        walkthrough_encoding: Optional[torch.Tensor] = None
-        for step in range(masks.shape[0]):
+
+        for step in range(masks_with_unshuffle_reset.shape[0]):
             rnn_out, rnn_hidden_states = self.state_encoder(
                 torch.cat(
-                    (obs_for_rnn[step : step + 1], last_walkthrough_encoding), dim=-1
+                    (
+                        obs_for_rnn[step : step + 1],
+                        last_walkthrough_encoding
+                        * masks_no_unshuffle_reset[step : step + 1],
+                    ),
+                    dim=-1,
                 ),
                 rnn_hidden_states,
-                masks[step : step + 1],
+                masks_with_unshuffle_reset[step : step + 1],
             )
             rnn_outs.append(rnn_out)
 
@@ -565,12 +583,12 @@ class ResNetTwoPhaseRearrangeActorCriticRNN(TwoPhaseRearrangeActorCriticSimpleCo
                 last_walkthrough_encoding,
                 masks_no_unshuffle_reset[step : step + 1],
             )
-            walkthrough_encoding = (
+            last_walkthrough_encoding = (
                 last_walkthrough_encoding * in_unshuffle_float[step : step + 1]
                 + walkthrough_encoding * in_walkthrough_float[step : step + 1]
             )
 
-        memory = memory.set_tensor("walkthrough_encoding", walkthrough_encoding)
+        memory = memory.set_tensor("walkthrough_encoding", last_walkthrough_encoding)
 
         rnn_out = torch.cat(rnn_outs, dim=0)
         walkthrough_dist, walkthrough_vals = self.walkthrough_ac(rnn_out)

@@ -8,13 +8,16 @@ from typing import Dict, Any, Tuple, Optional, Callable, List, Union, Sequence
 
 import ai2thor
 import ai2thor.controller
+import ai2thor.fifo_server
 import ai2thor.server
+import ai2thor.wsgi_server
 import numpy as np
+from packaging import version
+from torch.distributions.utils import lazy_property
+
 from allenact.utils.system import get_logger
 from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from allenact_plugins.ithor_plugin.ithor_util import round_to_factor
-from torch.distributions.utils import lazy_property
-
 from datagen.datagen_constants import OBJECT_TYPES_TO_NOT_MOVE
 from datagen.datagen_utils import (
     open_objs,
@@ -132,9 +135,9 @@ class RearrangeTaskSpec:
         self.starting_poses = starting_poses
         self.target_poses = target_poses
         self.runtime_sample = runtime_sample
-        self.runtime_data: Dict[
-            str, Any
-        ] = runtime_data if runtime_data is not None else {}
+        self.runtime_data: Dict[str, Any] = (
+            runtime_data if runtime_data is not None else {}
+        )
         self.metrics = metrics
 
     def __str__(self):
@@ -172,6 +175,7 @@ class RearrangeTHOREnvironment:
         mode: RearrangeMode = RearrangeMode.SNAP,
         force_cache_reset: Optional[bool] = None,
         controller_kwargs: Optional[Dict[str, Any]] = None,
+        enhanced_physics_determinism: bool = True,
     ):
         """Initialize a new rearrangement controller.
 
@@ -181,16 +185,13 @@ class RearrangeTHOREnvironment:
             when initializing the `ai2thor.controller.Controller` (e.g. width/height).
         """
         if ai2thor.__version__ is not None:  # Allows for custom THOR installs
-            for v in REQUIRED_THOR_VERSION.split(","):
-                operators = ["<=", ">=", "==", "<", ">"]
-                if any(op in v for op in operators):
-                    op = next(op for op in operators if op in v)
-                    v = f"{op}'{v.replace(op, '')}'"
-                    correct_version = eval(f"'{ai2thor.__version__}'{v}")
-                else:
-                    correct_version = ai2thor.__version__ == v
-                if not correct_version:
-                    raise ValueError(f"Please use AI2-THOR v{REQUIRED_THOR_VERSION}")
+            if ai2thor.__version__ not in ["0.0.1", None] and version.parse(
+                ai2thor.__version__
+            ) < version.parse(REQUIRED_THOR_VERSION):
+                raise ImportError(
+                    f"To run the rearrangment baseline experiments you must use"
+                    f" ai2thor version {REQUIRED_THOR_VERSION} or higher."
+                )
 
         # Saving attributes
         if mode == RearrangeMode.SNAP:
@@ -202,6 +203,14 @@ class RearrangeTHOREnvironment:
         self.force_cache_reset = force_cache_reset
         self.mode = mode
         self._controller_kwargs = {} if controller_kwargs is None else controller_kwargs
+        self._enhanced_physics_determinism = enhanced_physics_determinism
+
+        self.physics_step_kwargs = {}
+        if self._enhanced_physics_determinism:
+            self.physics_step_kwargs = {
+                "actionSimulationSeconds": 0.26,
+                "fixedDeltaTime": 0.02,
+            }
 
         # Cache of where objects can be interacted with
         self._interactable_positions_cache = ObjectInteractablePostionsCache()
@@ -246,10 +255,12 @@ class RearrangeTHOREnvironment:
         self._controller_kwargs["height"] = self._controller_kwargs.get("height", 300)
 
         controller = ai2thor.controller.Controller(
-            server_class=ai2thor.fifo_server.FifoServer,
-            scene="FloorPlan17_physics",
-            **self._controller_kwargs,
-            # server_class=ai2thor.wsgi_server.WsgiServer,  # Possibly useful in debugging
+            **{
+                "scene": "FloorPlan17_physics",
+                "server_class": ai2thor.fifo_server.FifoServer,
+                # "server_class": ai2thor.wsgi_server.WsgiServer,  # Possibly useful in debugging
+                **self._controller_kwargs,
+            },
         )
         return controller
 
@@ -260,15 +271,13 @@ class RearrangeTHOREnvironment:
         with include_object_data(self.controller):
             metadata = self.controller.last_event.metadata
 
-            held_objs = [o for o in metadata["objects"] if o["isPickedUp"]]
-            assert len(held_objs) <= 1, (
-                f"In scene {self.scene}: should not be able to hold more than one object."
-                f"\n\nCurrently holding {held_objs}."
-                f"\n\nTask spec {self.current_task_spec}."
-            )
-            if len(held_objs) == 1:
-                return held_objs[0]
-            return None
+            if len(metadata["inventoryObjects"]) == 0:
+                return None
+
+            assert len(metadata["inventoryObjects"]) <= 1
+
+            held_obj_id = metadata["inventoryObjects"][0]["objectId"]
+            return next(o for o in metadata["objects"] if o["objectId"] == held_obj_id)
 
     def get_agent_location(self) -> Dict[str, Union[float, int, bool]]:
         """Returns the agent's current location.
@@ -419,10 +428,10 @@ class RearrangeTHOREnvironment:
             error_message=(
                 "x/y/openness must be in [0:1] and we must be in the unshuffle phase."
             ),
-            updated_kwarg_names={"openness": "moveMagnitude"},
             x=x,
             y=y,
             openness=openness,
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def pickup_object(self, x: float, y: float) -> bool:
@@ -450,6 +459,7 @@ class RearrangeTHOREnvironment:
             error_message="x/y must be in [0:1] and we must be in the unshuffle phase.",
             x=x,
             y=y,
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def push_object(
@@ -504,7 +514,7 @@ class RearrangeTHOREnvironment:
             " Must be in unshuffle phase (i.e., call shuffle()),"
             " x,y,force_magnitude must be in [0:1],"
             " and rel_(x/y/z)_force must be in [-0.5:0.5]",
-            default_thor_kwargs=dict(handDistance=1.5),
+            default_thor_kwargs=dict(handDistance=1.5, **self.physics_step_kwargs),
             preprocess_kwargs_inplace=preprocess_kwargs,
             x=x,
             y=y,
@@ -521,6 +531,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.move_ahead,
             thor_action="MoveAhead",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def move_back(self) -> bool:
@@ -530,6 +541,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.move_back,
             thor_action="MoveBack",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def move_right(self) -> bool:
@@ -539,6 +551,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.move_right,
             thor_action="MoveRight",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def move_left(self) -> bool:
@@ -548,6 +561,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.move_left,
             thor_action="MoveLeft",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def rotate_left(self) -> bool:
@@ -557,6 +571,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.rotate_left,
             thor_action="RotateLeft",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def rotate_right(self) -> bool:
@@ -566,6 +581,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.rotate_right,
             thor_action="RotateRight",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def stand(self) -> bool:
@@ -575,6 +591,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.stand,
             thor_action="Stand",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def crouch(self) -> bool:
@@ -584,6 +601,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.crouch,
             thor_action="Crouch",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def look_up(self) -> bool:
@@ -593,6 +611,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.look_up,
             thor_action="LookUp",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def look_down(self) -> bool:
@@ -602,6 +621,7 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.look_down,
             thor_action="LookDown",
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def done(self) -> bool:
@@ -661,6 +681,7 @@ class RearrangeTHOREnvironment:
             x_meters=x_meters,
             y_meters=y_meters,
             z_meters=z_meters,
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def rotate_held_object(self, x: float, y: float, z: float) -> bool:
@@ -688,6 +709,7 @@ class RearrangeTHOREnvironment:
             x=x,
             y=y,
             z=z,
+            default_thor_kwargs=self.physics_step_kwargs,
         )
 
     def drop_held_object(self) -> bool:
@@ -700,6 +722,11 @@ class RearrangeTHOREnvironment:
             action_space=self.action_space,
             action_fn=self.drop_held_object,
             thor_action="DropHandObject",
+            default_thor_kwargs={
+                "autoSimulation": False,
+                "randomMagnitude": 0.0,
+                **self.physics_step_kwargs,
+            },
         )
 
     def drop_held_object_with_snap(self) -> bool:
@@ -722,7 +749,7 @@ class RearrangeTHOREnvironment:
         `True` if the drop was successful, otherwise `False`.
         """
         if not self.shuffle_called:
-            raise Exception("Must be in shuffle phaase.")
+            raise Exception("Must be in shuffle phase.")
         if not self.mode == RearrangeMode.SNAP:
             raise Exception("Must be in RearrangeMode.SNAP mode.")
 
@@ -735,6 +762,11 @@ class RearrangeTHOREnvironment:
 
             if held_obj is None:
                 return False
+
+            # When dropping up an object, make it breakable.
+            self.controller.step(
+                "MakeObjectBreakable", objectId=self.held_object["objectId"]
+            )
 
             agent = event.metadata["agent"]
             goal_pose = self.obj_name_to_walkthrough_start_pose[held_obj["name"]]
@@ -808,21 +840,29 @@ class RearrangeTHOREnvironment:
 
             # We couldn't teleport the object to the target location, let's try placing it
             # in a visible receptacle.
-            for possible_receptacle in event.metadata["objects"]:
-                if possible_receptacle["visible"] and possible_receptacle["receptacle"]:
-                    self.controller.step(
-                        action="PlaceHeldObject",
-                        objectId=possible_receptacle["objectId"],
-                        rotation=goal_rot,
-                        position=goal_pos,
-                    )
-                    if self.controller.last_event.metadata["lastActionSuccess"]:
-                        break
+            possible_receptacles = [
+                o for o in event.metadata["objects"] if o["visible"] and o["receptacle"]
+            ]
+            possible_receptacles = sorted(
+                possible_receptacles, key=lambda o: (o["distance"], o["objectId"])
+            )
+            for possible_receptacle in possible_receptacles:
+                self.controller.step(
+                    action="PlaceHeldObject",
+                    objectId=possible_receptacle["objectId"],
+                    **self.physics_step_kwargs,
+                )
+                if self.controller.last_event.metadata["lastActionSuccess"]:
+                    break
 
             # We failed to place the object into a receptacle, let's just drop it.
             if not self.controller.last_event.metadata["lastActionSuccess"]:
                 self.controller.step(
-                    "DropHandObject", forceAction=True, autoSimulation=False
+                    "DropHandObjectAhead",
+                    forceAction=True,
+                    autoSimulation=False,
+                    randomMagnitude=0.0,
+                    **{**self.physics_step_kwargs, "actionSimulationSeconds": 1.5},
                 )
 
             return False
@@ -998,12 +1038,12 @@ class RearrangeTHOREnvironment:
     @classmethod
     def are_poses_equal(
         cls,
-        goal_pose: Dict[str, Any],
-        cur_pose: Dict[str, Any],
+        goal_pose: Union[Dict[str, Any], Sequence[Dict[str, Any]]],
+        cur_pose: Union[Dict[str, Any], Sequence[Dict[str, Any]]],
         min_iou: float = 0.5,
         open_tol: float = 0.2,
         treat_broken_as_unequal: bool = False,
-    ) -> bool:
+    ) -> Union[bool, np.ndarray]:
         """Determine if two object poses are equal (up to allowed error).
 
         The `goal_pose` must not have the object as broken.
@@ -1017,6 +1057,20 @@ class RearrangeTHOREnvironment:
         treat_broken_as_unequal : If `False` an exception will be thrown if the `cur_pose` is broken. If `True`, then
              if `cur_pose` is broken this function will always return `False`.
         """
+        if isinstance(goal_pose, Sequence):
+            assert isinstance(cur_pose, Sequence)
+            return np.array(
+                [
+                    cls.are_poses_equal(
+                        goal_pose=p0,
+                        cur_pose=p1,
+                        min_iou=min_iou,
+                        open_tol=open_tol,
+                        treat_broken_as_unequal=treat_broken_as_unequal,
+                    )
+                    for p0, p1 in zip(goal_pose, cur_pose)
+                ]
+            )
         assert not goal_pose["broken"]
 
         if cur_pose["broken"]:
@@ -1189,6 +1243,10 @@ class RearrangeTHOREnvironment:
         ):
             count = 1
             self.controller.reset(task_spec.scene)
+
+            if self._enhanced_physics_determinism:
+                self.controller.step("PausePhysicsAutoSim")
+
             remove_objects_until_all_have_identical_meshes(self.controller)
             self.controller.step(
                 "InitialRandomSpawn", forceVisible=True, placeStationary=True,
@@ -1220,9 +1278,11 @@ class RearrangeTHOREnvironment:
                     rot = round_to_factor(30 * random.randint(0, 11), 90)
                 md = self.controller.step(
                     "TeleportFull",
-                    rotation={"x": 0, "y": rot, "z": 0},
-                    forceAction=teleport_count == max_teleports - 1,
                     **pos,
+                    rotation={"x": 0, "y": rot, "z": 0},
+                    horizon=0.0,
+                    standing=True,
+                    forceAction=teleport_count == max_teleports - 1,
                 ).metadata
                 if md["lastActionSuccess"]:
                     break
@@ -1255,6 +1315,8 @@ class RearrangeTHOREnvironment:
         self.current_task_spec = task_spec
 
         self.controller.reset(self.current_task_spec.scene)
+        if self._enhanced_physics_determinism:
+            self.controller.step("PausePhysicsAutoSim")
 
         if force_axis_aligned_start:
             self.current_task_spec.agent_rotation = round_to_factor(
@@ -1264,7 +1326,14 @@ class RearrangeTHOREnvironment:
         # set agent position
         pos = self.current_task_spec.agent_position
         rot = {"x": 0, "y": self.current_task_spec.agent_rotation, "z": 0}
-        self.controller.step("TeleportFull", rotation=rot, **pos, forceAction=True)
+        self.controller.step(
+            "TeleportFull",
+            **pos,
+            rotation=rot,
+            horizon=0.0,
+            standing=True,
+            forceAction=True,
+        )
 
         # show object metadata
         with include_object_data(self.controller):
@@ -1279,14 +1348,20 @@ class RearrangeTHOREnvironment:
                 self.controller.step(
                     action="OpenObject",
                     objectId=current_obj_info["objectId"],
-                    moveMagnitude=obj["target_openness"],
+                    openness=obj["target_openness"],
                     forceAction=True,
+                    **self.physics_step_kwargs,
                 )
 
             # arrange walkthrough poses for pickupable objects
             self.controller.step(
-                "SetObjectPoses", objectPoses=self.current_task_spec.target_poses
+                "SetObjectPoses",
+                objectPoses=self.current_task_spec.target_poses,
+                forceKinematic=False,
+                enablePhysicsJitter=True,
+                forceRigidbodySleep=True,
             )
+            assert self.controller.last_event.metadata["lastActionSuccess"]
 
     def reset(
         self, task_spec: RearrangeTaskSpec, force_axis_aligned_start: bool = False,
@@ -1332,7 +1407,14 @@ class RearrangeTHOREnvironment:
         # set agent position
         pos = task_spec.agent_position
         rot = {"x": 0, "y": task_spec.agent_rotation, "z": 0}
-        self.controller.step("TeleportFull", rotation=rot, **pos, forceAction=True)
+        self.controller.step(
+            "TeleportFull",
+            **pos,
+            rotation=rot,
+            horizon=0.0,
+            standing=True,
+            forceAction=True,
+        )
 
         # Randomly shuffle a subset of objects.
         nobjects_to_move = random.randint(1, 5)
@@ -1390,11 +1472,20 @@ class RearrangeTHOREnvironment:
         # TODO: No need to reset every time right?
         if reset:
             self.controller.reset(self.scene)
+            if self._enhanced_physics_determinism:
+                self.controller.step("PausePhysicsAutoSim")
 
         # set agent position
         pos = task_spec.agent_position
         rot = {"x": 0, "y": task_spec.agent_rotation, "z": 0}
-        self.controller.step("TeleportFull", rotation=rot, **pos, forceAction=True)
+        self.controller.step(
+            "TeleportFull",
+            **pos,
+            rotation=rot,
+            horizon=0.0,
+            standing=True,
+            forceAction=True,
+        )
 
         # open objects
         with include_object_data(self.controller):
@@ -1409,12 +1500,24 @@ class RearrangeTHOREnvironment:
                 self.controller.step(
                     action="OpenObject",
                     objectId=current_obj_info["objectId"],
-                    moveMagnitude=obj["start_openness"],
+                    openness=obj["start_openness"],
                     forceAction=True,
+                    **(
+                        self.physics_step_kwargs
+                        if obj is task_spec.openable_data[-1]
+                        else {}
+                    ),
                 )
 
         # arrange unshuffle start poses for pickupable objects
-        self.controller.step("SetObjectPoses", objectPoses=task_spec.starting_poses)
+        self.controller.step(
+            "SetObjectPoses",
+            objectPoses=task_spec.starting_poses,
+            forceKinematic=False,
+            enablePhysicsJitter=True,
+            forceRigidbodySleep=True,
+        )
+        assert self.controller.last_event.metadata["lastActionSuccess"]
 
     def shuffle(self, require_reset: bool = False):
         """Shuffle objects in the environment to start the unshuffle phase."""

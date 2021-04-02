@@ -3,13 +3,12 @@ from typing import Dict, Any
 from allenact.algorithms.onpolicy_sync.losses import PPO
 from allenact.algorithms.onpolicy_sync.losses.ppo import PPOConfig
 from allenact.utils.experiment_utils import LinearDecay, PipelineStage
-
 from baseline_configs.one_phase.one_phase_rgb_base import (
     OnePhaseRGBBaseExperimentConfig,
 )
 
 
-class OnePhasePPORGBExperimentConfig(OnePhaseRGBBaseExperimentConfig):
+class OnePhaseRGBPPOExperimentConfig(OnePhaseRGBBaseExperimentConfig):
     USE_RESNET_CNN = False
 
     @classmethod

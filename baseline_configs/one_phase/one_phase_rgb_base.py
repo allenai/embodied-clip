@@ -2,7 +2,6 @@ from abc import ABC
 from typing import Optional, Dict, Sequence
 
 from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
-
 from baseline_configs.rearrange_base import RearrangeBaseExperimentConfig
 from rearrange.sensors import (
     RGBRearrangeSensor,
@@ -34,14 +33,17 @@ class OnePhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
         force_cache_reset: bool,
         allowed_scenes: Optional[Sequence[str]],
         seed: int,
+        epochs: int,
         scene_to_allowed_rearrange_inds: Optional[Dict[str, Sequence[int]]] = None,
         x_display: Optional[str] = None,
         sensors: Optional[Sequence[Sensor]] = None,
+        thor_controller_kwargs: Optional[Dict] = None,
         **kwargs,
     ) -> RearrangeTaskSampler:
         """Return a RearrangeTaskSampler."""
         if "mp_ctx" in kwargs:
             del kwargs["mp_ctx"]
+        assert not cls.RANDOMIZE_START_ROTATION_DURING_TRAINING
         return RearrangeTaskSampler.from_fixed_dataset(
             run_walkthrough_phase=False,
             run_unshuffle_phase=True,
@@ -54,6 +56,9 @@ class OnePhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
                 controller_kwargs={
                     "x_display": x_display,
                     **cls.THOR_CONTROLLER_KWARGS,
+                    **(
+                        {} if thor_controller_kwargs is None else thor_controller_kwargs
+                    ),
                     "renderDepthImage": any(
                         isinstance(s, DepthSensor) for s in cls.SENSORS
                     ),
@@ -67,5 +72,6 @@ class OnePhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
             discrete_actions=cls.actions(),
             require_done_action=cls.REQUIRE_DONE_ACTION,
             force_axis_aligned_start=cls.FORCE_AXIS_ALIGNED_START,
+            epochs=epochs,
             **kwargs,
         )

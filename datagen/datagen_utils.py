@@ -10,6 +10,10 @@ from datagen.datagen_constants import OBJECT_TYPES_THAT_CAN_HAVE_IDENTICAL_MESHE
 def get_scenes(stage: str) -> List[str]:
     """Returns a list of iTHOR scene names for each stage."""
     assert stage in {"train", "train_unseen", "val", "valid", "test", "all"}
+    assert stage in {"debug", "train", "train_unseen", "val", "valid", "test", "all"}
+
+    if stage == "debug":
+        return ["FloorPlan1"]
 
     # [1-20] for train, [21-25] for val, [26-30] for test
     if stage in ["train", "train_unseen"]:
@@ -30,6 +34,17 @@ def get_scenes(stage: str) -> List[str]:
     return kitchens + living_rooms + bedrooms + bathrooms
 
 
+def filter_pickupable(
+    objects: List[Dict], object_types_to_not_move: Set[str]
+) -> List[Dict]:
+    """Filters object data only for pickupable objects."""
+    return [
+        obj
+        for obj in objects
+        if obj["pickupable"] and not obj["objectType"] in object_types_to_not_move
+    ]
+
+
 def open_objs(
     objects_to_open: List[dict], controller: Controller
 ) -> Dict[int, Union[float, None]]:
@@ -44,7 +59,7 @@ def open_objs(
         controller.step(
             "OpenObject",
             objectId=obj["objectId"],
-            moveMagnitude=new_openness,
+            openness=new_openness,
             forceAction=True,
         )
         out[obj["name"]] = new_openness

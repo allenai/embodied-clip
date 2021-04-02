@@ -18,18 +18,17 @@ import ai2thor.controller
 import ai2thor.server
 import networkx as nx
 import stringcase
+from torch.distributions.utils import lazy_property
+
 from allenact.utils.system import get_logger
 from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from allenact_plugins.ithor_plugin.ithor_util import round_to_factor
-from torch.distributions.utils import lazy_property
-
 from rearrange.constants import STEP_SIZE
 from rearrange.environment import (
     RearrangeTHOREnvironment,
     RearrangeMode,
 )
 from rearrange.utils import include_object_data
-from rearrange.utils import save_frames_to_mp4
 
 if TYPE_CHECKING:
     from rearrange.tasks import UnshuffleTask
@@ -435,6 +434,7 @@ class GreedyUnshuffleExpert:
 
         self._last_held_object_name: Optional[str] = None
         self._last_to_interact_object_pose: Optional[Dict[str, Any]] = None
+        self._name_of_object_we_wanted_to_pickup: Optional[str] = None
         self.object_name_to_priority: defaultdict = defaultdict(lambda: 0)
 
         self.shortest_path_navigator.on_reset()
@@ -460,17 +460,29 @@ class GreedyUnshuffleExpert:
 
             action_names = self.task.action_names()
             last_expert_action = self.expert_action_list[-1]
+            agent_took_expert_action = action_taken == last_expert_action
             action_str = action_names[action_taken]
 
             was_nav_action = any(k in action_str for k in ["move", "rotate", "look"])
 
             if (
-                "drop_held_object_with_snap" in action_str
+                "pickup_" in action_str
                 and action_taken == last_expert_action
+                and action_success
             ):
-                self.object_name_to_priority[self._last_held_object_name] += 1
+                self._name_of_object_we_wanted_to_pickup = self._last_to_interact_object_pose[
+                    "name"
+                ]
 
-            if "open_by_type" in action_str and action_taken == last_expert_action:
+            if "drop_held_object_with_snap" in action_str and agent_took_expert_action:
+                if self._name_of_object_we_wanted_to_pickup is not None:
+                    self.object_name_to_priority[
+                        self._name_of_object_we_wanted_to_pickup
+                    ] += 1
+                else:
+                    self.object_name_to_priority[self._last_held_object_name] += 1
+
+            if "open_by_type" in action_str and agent_took_expert_action:
                 self.object_name_to_priority[
                     self._last_to_interact_object_pose["name"]
                 ] += 1
@@ -707,7 +719,7 @@ class GreedyUnshuffleExpert:
                     return dict(
                         action="OpenByType",
                         objectId=obj_pose_to_go_to["objectId"],
-                        moveMagnitude=goal_obj_pos["openness"],
+                        openness=goal_obj_pos["openness"],
                     )
                 elif obj_pose_to_go_to["pickupable"]:
                     return dict(
@@ -759,20 +771,16 @@ class GreedyUnshuffleExpert:
 
 
 def __test():
+    # noinspection PyUnresolvedReferences
     from baseline_configs.one_phase.one_phase_rgb_base import (
         OnePhaseRGBBaseExperimentConfig,
     )
-    from rearrange.tasks import RearrangeTaskSpecIterable
+
+    # noinspection PyUnresolvedReferences
+    from rearrange.utils import save_frames_to_mp4
 
     task_sampler = OnePhaseRGBBaseExperimentConfig.make_sampler_fn(
-        stage="train", seed=0, force_cache_reset=True, allowed_scenes=None
-    )
-    s = task_sampler.task_spec_iterator.scenes_to_task_spec_dicts
-    task_sampler.task_spec_iterator = RearrangeTaskSpecIterable(
-        scenes_to_task_spec_dicts={k: v[:1] for k, v in s.items()},
-        seed=0,
-        epochs=100000,
-        shuffle=True,
+        stage="train", seed=0, force_cache_reset=True, allowed_scenes=None, epochs=1,
     )
     random_action_prob = 0.0
 
@@ -780,11 +788,15 @@ def __test():
         controller=task_sampler.unshuffle_env.controller, grid_size=STEP_SIZE
     )
     k = 0
-    while True:
+
+    all_metrics = []
+    while task_sampler.length > 0:
         print(k)
         random.seed(k)
         k += 1
         task = task_sampler.next_task()
+        assert task is not None
+
         greedy_expert = GreedyUnshuffleExpert(
             task=task, shortest_path_navigator=shortest_path_navigator
         )
@@ -808,11 +820,14 @@ def __test():
             )
 
             frames.append(controller.last_event.frame)
+        # if task.metrics()["unshuffle/prop_fixed"] == 1:
+        #     save_frames_to_mp4(frames=frames, file_name=f"rearrange_expert_{k}.mp4")
 
-        if task.metrics()["unshuffle/prop_fixed"] == 1:
-            save_frames_to_mp4(frames=frames, file_name=f"rearrange_expert_{k}.mp4")
+        metrics = task.metrics()
+        print(metrics)
+        all_metrics.append(metrics)
 
-        print({k: v for k, v in task.metrics().items() if k != "task_info"})
+    print(f"{len(all_metrics)} tasks evaluated with expert.")
 
 
 if __name__ == "__main__":

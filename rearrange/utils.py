@@ -6,8 +6,9 @@ from typing import Dict, Callable, Tuple, Union, List, Any, Optional, Sequence
 import ai2thor.controller
 import lru
 import numpy as np
-from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from scipy.spatial.qhull import ConvexHull, Delaunay
+
+from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
 
 _UNIFORM_BOX_CACHE = {}
 
@@ -464,13 +465,17 @@ class ObjectInteractablePostionsCache:
             )
 
             object_held = obj_in_scene["isPickedUp"]
+            physics_was_unpaused = controller.last_event.metadata.get(
+                "physicsAutoSimulation", True
+            )
             if should_teleport:
                 if object_held:
                     if not hand_in_initial_position(controller=controller):
                         raise NotImplementedError
 
-                    controller.step("PausePhysicsAutoSim")
-                    assert controller.last_event.metadata["lastActionSuccess"]
+                    if physics_was_unpaused:
+                        controller.step("PausePhysicsAutoSim")
+                        assert controller.last_event.metadata["lastActionSuccess"]
 
                 event = controller.step(
                     "TeleportObject",
@@ -488,6 +493,7 @@ class ObjectInteractablePostionsCache:
                 objectId=obj["objectId"],
                 positions=reachable_positions,
             ).metadata
+            assert metadata["lastActionSuccess"]
             self._key_to_positions[obj_key] = metadata["actionReturn"]
 
             if should_teleport:
@@ -499,8 +505,10 @@ class ObjectInteractablePostionsCache:
                             forceAction=True,
                         )
                         assert controller.last_event.metadata["lastActionSuccess"]
-                        controller.step("UnpausePhysicsAutoSim")
-                        assert controller.last_event.metadata["lastActionSuccess"]
+
+                        if physics_was_unpaused:
+                            controller.step("UnpausePhysicsAutoSim")
+                            assert controller.last_event.metadata["lastActionSuccess"]
                     else:
                         raise NotImplementedError
                 else:

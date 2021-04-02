@@ -4,7 +4,6 @@ from allenact.algorithms.onpolicy_sync.losses.imitation import Imitation
 from allenact.algorithms.onpolicy_sync.losses.ppo import PPOConfig
 from allenact.base_abstractions.sensor import ExpertActionSensor
 from allenact.utils.experiment_utils import LinearDecay, PipelineStage
-
 from baseline_configs.one_phase.one_phase_rgb_il_base import (
     il_training_params,
     StepwiseLinearDecay,
