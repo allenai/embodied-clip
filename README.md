@@ -431,7 +431,16 @@ Of the above metrics, the most important (those used for comparing models) are
 ## 🏋 Training Baseline Models with AllenAct
 
 We use the [AllenAct framework](https://www.allenact.org) for training our baseline rearrangement models, 
-this framework is automatically installed when [installing the requirements for this project](#installation). 
+this framework is automatically installed when [installing the requirements for this project](#installation).
+
+Before running training or inference you'll first have to add the `ai2thor-rearrangement` directory
+to your `PYTHONPATH` (so that `python` and `AllenAct` knows where to for various modules).
+To do this you can run the following:
+```bash
+cd YOUR/PATH/TO/ai2thor-rearrangement
+export PYTHONPATH=$PYTHONPATH:$PWD
+```
+
 Let's say you want to train a model for the 1-phase challenge. This can be easily done by running the command 
 ```bash
 allenact -o rearrange_out -b . baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py 
