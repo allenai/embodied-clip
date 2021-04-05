@@ -31,6 +31,7 @@ dependencies:
   - tqdm
   - setuptools
   - stringcase
+  - packaging
   - pip:
     - allenact
     - allenact_plugins[ithor]

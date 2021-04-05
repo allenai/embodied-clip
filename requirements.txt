@@ -10,3 +10,4 @@ stringcase
 lru-dict
 networkx
 compress-pickle==1.2.0
+packaging
