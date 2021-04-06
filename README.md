@@ -10,7 +10,10 @@ to get started.
 
 ### Contents
 <!--
+# To create the table of contents, move the [TOC] line outside of this comment
+# and then run the below Python block.
 [TOC]
+import markdown
 with open("README.md", "r") as f:
     a = markdown.markdown(f.read(), extensions=["toc"])
     print(a[:a.index("</div>") + 6])
@@ -47,6 +50,7 @@ with open("README.md", "r") as f:
 </li>
 </ul>
 </li>
+<li><a href="#-citation">📄 Citation</a></li>
 </ul>
 </div>
 
@@ -469,3 +473,18 @@ allenact baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py -c pretrained
 this will evaluate this model across all datapoints in the `data/combined.pkl.gz` dataset
 which contains data from the `train`, `train_unseen`, `val`, and `test` sets so that
 evaluation doesn't have to be run on each set separately.
+
+# 📄 Citation
+
+If you use this work, please cite [our paper](https://arxiv.org/abs/2103.16544) (to appear in CVPR'21):
+
+```
+@misc{WeihsEtAl2021Rearrangement,
+  title={Visual Room Rearrangement}, 
+  author={Luca Weihs and Matt Deitke and Aniruddha Kembhavi and Roozbeh Mottaghi},
+  year={2021},
+  eprint={2103.16544},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV}
+}
+```
