@@ -1,8 +1,8 @@
-<h1 align="center">
+<h1 align="left">
     AI2-THOR Rearrangement Challenge
 </h1>
 
-<p align="center">
+<p align="left">
     <a href="//github.com/allenai/ai2thor-rearrangement/blob/main/LICENSE">
         <!-- ai2thor-rearrangement wasn't identifiable by GitHub (on the day this was added), so using the same one as ai2thor -->
         <img alt="License" src="https://img.shields.io/github/license/allenai/ai2thor.svg?color=blue">
