@@ -1,5 +1,7 @@
 # 2021 AI2-THOR Rearrangement Challenge
 
+<img src="https://ai2thor.allenai.org/static/4844ccdba50de95a4feff30cf2978ce5/3ba25/rearrangement-cover1.png" />
+
 Welcome to the 2021 AI2-THOR Rearrangement Challenge hosted at the
 [CVPR'21 Embodied-AI Workshop](https://embodied-ai.org/).
 The goal of this challenge is to build a model/agent that move objects in a room
@@ -478,13 +480,12 @@ evaluation doesn't have to be run on each set separately.
 
 If you use this work, please cite [our paper](https://arxiv.org/abs/2103.16544) (to appear in CVPR'21):
 
-```
-@misc{WeihsEtAl2021Rearrangement,
-  title={Visual Room Rearrangement}, 
-  author={Luca Weihs and Matt Deitke and Aniruddha Kembhavi and Roozbeh Mottaghi},
-  year={2021},
-  eprint={2103.16544},
-  archivePrefix={arXiv},
-  primaryClass={cs.CV}
+```python
+@InProceedings{RoomR,
+  author = {Luca Weihs and Matt Deitke and Aniruddha Kembhavi and Roozbeh Mottaghi},
+  title = {Visual Room Rearrangement},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  month = {June},
+  year = {2021}
 }
 ```
