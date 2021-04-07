@@ -7,13 +7,13 @@
         <!-- ai2thor-rearrangement wasn't identifiable by GitHub (on the day this was added), so using the same one as ai2thor -->
         <img alt="License" src="https://img.shields.io/github/license/allenai/ai2thor.svg?color=blue">
     </a>
-    <a href="//ai2thor.allenai.org/rearrangement/">
+    <a href="//ai2thor.allenai.org/rearrangement/" target="_blank">
         <img alt="Documentation" src="https://img.shields.io/website/https/ai2thor.allenai.org?down_color=red&down_message=offline&up_message=online">
     </a>
     <a href="//github.com/allenai/ai2thor-rearrangement/releases">
         <img alt="GitHub release" src="https://img.shields.io/github/release/allenai/ai2thor-rearrangement.svg">
     </a>
-    <a href="//arxiv.org/abs/2103.16544">
+    <a href="//arxiv.org/abs/2103.16544" target="_blank">
         <img src="https://img.shields.io/badge/arXiv-2103.16544-<COLOR>">
     </a>
 </p>
