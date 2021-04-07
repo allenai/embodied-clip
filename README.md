@@ -16,6 +16,9 @@
     <a href="//arxiv.org/abs/2103.16544" target="_blank">
         <img src="https://img.shields.io/badge/arXiv-2103.16544-<COLOR>">
     </a>
+    <a href="//arxiv.org/abs/2103.16544" target="_blank">
+        <img src="https://img.shields.io/badge/venue-CVPR 2021-blue">
+    </a>
 </p>
 
 <img src="https://ai2thor.allenai.org/static/4844ccdba50de95a4feff30cf2978ce5/3ba25/rearrangement-cover1.png" />
