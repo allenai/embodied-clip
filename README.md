@@ -22,6 +22,9 @@
     <a href="//www.youtube.com/watch?v=1APxaOC9U-A" target="_blank">
         <img src="https://img.shields.io/badge/video-YouTube-red">
     </a>
+    <a href="https://join.slack.com/t/ask-prior/shared_invite/zt-oq4z9u4i-QR3kgpeeTAymEDkNpZmCcg" target="_blank">
+        <img src="https://img.shields.io/badge/questions-Ask Prior Slack-blue">
+    </a>
 </p>
 
 <img src="https://ai2thor.allenai.org/static/4844ccdba50de95a4feff30cf2978ce5/3ba25/rearrangement-cover1.png" />
@@ -32,7 +35,8 @@ The goal of this challenge is to build a model/agent that move objects in a room
 to restore them to a given initial configuration. Please follow the instructions below
 to get started.
 
-
+If you have any questions please [file an issue](https://github.com/allenai/ai2thor-rearrangement/issues)
+or post in the `#rearrangement-challenge` channel on our [Ask PRIOR slack](https://join.slack.com/t/ask-prior/shared_invite/zt-oq4z9u4i-QR3kgpeeTAymEDkNpZmCcg).
 
 ### Contents
 <!--
@@ -71,7 +75,7 @@ with open("README.md", "r") as f:
 </ul>
 </li>
 <li><a href="#-training-baseline-models-with-allenact">🏋 Training Baseline Models with AllenAct</a><ul>
-<li><a href="#-pretrained-1-phase-model">💪 Pretrained 1-Phase Model</a></li>
+<li><a href="#-pretrained-models">💪 Pretrained Models</a></li>
 </ul>
 </li>
 </ul>
@@ -210,9 +214,32 @@ be used for evaluation.
   
 ## 🛤️ Submitting to the Leaderboard
 
-We will be tracking challenge participant entries using the [AI2 Leaderboard](https://leaderboard.allenai.org/).
-Submissions will be opened soon and a submission link will be provided in this section along with
-instructions on the expected format for submissions.
+We are tracking challenge participant entries using the [AI2 Leaderboard](https://leaderboard.allenai.org/).
+
+Submissions can be made to the 1-phase leaderboard [here](https://leaderboard.allenai.org/ithor_rearrangement_1phase)
+and submissions to the 2-phase leaderboard can be made [here](https://leaderboard.allenai.org/ithor_rearrangement_2phase).
+
+Submissions should include your agent's trajectories for all tasks contained within the [combined.pkl.gz](data/combined.pkl.gz)
+dataset, this "combined" dataset includes tasks for the train, train_unseen, validation, and test sets. For an example
+as to how to iterate through all the datapoints in this dataset and save the resulting
+metrics in our expected submission format [see here](https://github.com/allenai/ai2thor-rearrangement/blob/main/example.py#L128).
+
+A (full) example the expected submission format for the 1-phase task can be found [here](https://prior-leaderboards-public.s3-us-west-2.amazonaws.com/ithor-rearrangement/one-phase/demo-trajectories-2021/example_submission.json.gz)
+and, for the 2-phase task, can be found [here](https://prior-leaderboards-public.s3-us-west-2.amazonaws.com/ithor-rearrangement/two-phase/demo-trajectories-2021/example_submission.json.gz).
+Note that this submission format is a gzip'ed json file where the json file has the form
+```
+{
+  "UNIQUE_ID_OF_TASK_0": YOUR_AGENTS_METRICS_AND_TRAJECTORY_FOR_TASK_0,
+  "UNIQUE_ID_OF_TASK_1": YOUR_AGENTS_METRICS_AND_TRAJECTORY_FOR_TASK_1,
+  ...
+}
+```
+these metrics and unique IDs can be easily obtained when iterating over the dataset (see the above example).
+
+Alternatively: if you run inference on the combined dataset using AllenAct (see [below](#-training-baseline-models-with-allenact)
+for more details) then you can simply (1) gzip the `metrics*.json` file saved when running inference, (2) rename
+this file `submission.json.gz`, and (3) submit this file to the leaderboard directly.
+
 
 ## 🖼️ Allowed Observations
 
@@ -487,14 +514,24 @@ A similar model can be trained for the 2-phase challenge by running
 allenact -o rearrange_out -b . baseline_configs/two_phase/two_phase_rgb_resnet_ppowalkthrough_ilunshuffle.py
 ```
 
-### 💪 Pretrained 1-Phase Model
+### 💪 Pretrained Models
 
-We provide a pretrained baseline model for the 1-phase task. This model can be downloaded from 
-[this link](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetDagger_40proc__time_2021-02-07_11-25-27__stage_00__steps_000075001830.pt)
-and should be placed into the `pretrained_model_ckpts` directory. You can then run inference on this
-model using AllenAct using the command
+We currently provide the following pretrained models (see [our paper](https://arxiv.org/abs/2103.16544) for details
+on these models):
+
+| Model | % Fixed Strict (Test) | Pretrained Model |
+|------------|:----------:|:----------:|
+| [1-Phase ResNet18 IL](baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py) | 6.3% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetDagger_40proc__stage_00__steps_000050058550.pt) |
+| [1-Phase ResNet18 PPO](baseline_configs/one_phase/one_phase_rgb_resnet_ppo.py) | 5.3%| [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetPPO__stage_00__steps_000060068000.pt) |
+| [1-Phase Simple IL](baseline_configs/one_phase/one_phase_rgb_dagger.py) | 4.8% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBDagger_40proc__stage_00__steps_000065070800.pt) |
+| [1-Phase Simple PPO](baseline_configs/one_phase/one_phase_rgb_ppo.py) | 4.6% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBPPO__stage_00__steps_000010010730.pt) |
+| [2-Phase ResNet18 IL+PPO](baseline_configs/two_phase/two_phase_rgb_resnet_ppowalkthrough_ilunshuffle.py) | 0.66% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000020028800.pt) |
+
+These models can be downloaded at from the above links and should be placed into the `pretrained_model_ckpts` directory.
+You can then, for example, run inference for the _1-Phase ResNet18 IL_ model using AllenAct by running:
 ```bash
-allenact baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py -c pretrained_model_ckpts/exp_OnePhaseRGBResNetDagger_40proc__time_2021-02-07_11-25-27__stage_00__steps_000075001830.pt -t 2021-02-07_11-25-27
+export CURRENT_TIME=$(date '+%Y-%m-%d_%H-%M-%S') # This is just to record when you ran this inference
+allenact baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py -c pretrained_model_ckpts/exp_OnePhaseRGBResNetDagger_40proc__stage_00__steps_000050058550.pt -t $CURRENT_TIME
 ```
 this will evaluate this model across all datapoints in the `data/combined.pkl.gz` dataset
 which contains data from the `train`, `train_unseen`, `val`, and `test` sets so that
@@ -504,7 +541,7 @@ evaluation doesn't have to be run on each set separately.
 
 If you use this work, please cite [our paper](https://arxiv.org/abs/2103.16544) (to appear in CVPR'21):
 
-```python
+```bibtex
 @InProceedings{RoomR,
   author = {Luca Weihs and Matt Deitke and Aniruddha Kembhavi and Roozbeh Mottaghi},
   title = {Visual Room Rearrangement},
