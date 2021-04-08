@@ -23,7 +23,7 @@
         <img src="https://img.shields.io/badge/video-YouTube-red">
     </a>
     <a href="https://join.slack.com/t/ask-prior/shared_invite/zt-oq4z9u4i-QR3kgpeeTAymEDkNpZmCcg" target="_blank">
-        <img src="https://img.shields.io/static/v1?label=questions&message=Ask PRIOR Slack&color=<COLOR>">
+        <img src="https://img.shields.io/badge/questions-Ask Prior Slack-blue">
     </a>
 </p>
 
