@@ -19,6 +19,9 @@
     <a href="//arxiv.org/abs/2103.16544" target="_blank">
         <img src="https://img.shields.io/badge/venue-CVPR 2021-blue">
     </a>
+    <a href="//www.youtube.com/watch?v=1APxaOC9U-A" target="_blank">
+        <img src="https://img.shields.io/badge/video-YouTube-red">
+    </a>
     <a href="https://join.slack.com/t/ask-prior/shared_invite/zt-oq4z9u4i-QR3kgpeeTAymEDkNpZmCcg" target="_blank">
         <img src="https://img.shields.io/static/v1?label=questions&message=Ask PRIOR Slack&color=<COLOR>">
     </a>
