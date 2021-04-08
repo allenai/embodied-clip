@@ -227,7 +227,7 @@ metrics in our expected submission format [see here](https://github.com/allenai/
 A (full) example the expected submission format for the 1-phase task can be found [here](https://prior-leaderboards-public.s3-us-west-2.amazonaws.com/ithor-rearrangement/one-phase/demo-trajectories-2021/example_submission.json.gz)
 and, for the 2-phase task, can be found [here](https://prior-leaderboards-public.s3-us-west-2.amazonaws.com/ithor-rearrangement/two-phase/demo-trajectories-2021/example_submission.json.gz).
 Note that this submission format is a gzip'ed json file where the json file has the form
-```json
+```
 {
   "UNIQUE_ID_OF_TASK_0": YOUR_AGENTS_METRICS_AND_TRAJECTORY_FOR_TASK_0,
   "UNIQUE_ID_OF_TASK_1": YOUR_AGENTS_METRICS_AND_TRAJECTORY_FOR_TASK_1,
