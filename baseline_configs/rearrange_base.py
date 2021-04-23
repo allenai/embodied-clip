@@ -1,4 +1,5 @@
 import copy
+import platform
 from abc import abstractmethod
 from typing import Optional, List, Sequence, Dict, Any
 
@@ -6,6 +7,13 @@ import gym.spaces
 import stringcase
 import torch
 import torchvision.models
+from torch import nn, cuda, optim
+from torch.optim.lr_scheduler import LambdaLR
+
+import datagen.datagen_runner
+import datagen.datagen_utils
+import datagen.datagen_utils
+import datagen.datagen_utils as datagen_utils
 from allenact.base_abstractions.experiment_config import (
     ExperimentConfig,
     MachineParams,
@@ -16,11 +24,12 @@ from allenact.base_abstractions.sensor import SensorSuite, Sensor, ExpertActionS
 from allenact.embodiedai.preprocessors.resnet import ResNetPreprocessor
 from allenact.utils.experiment_utils import TrainingPipeline, LinearDecay, Builder
 from allenact.utils.misc_utils import partition_sequence, md5_hash_str_as_int
-from torch import nn, cuda, optim
-from torch.optim.lr_scheduler import LambdaLR
-
-import datagen
-import datagen.datagen_utils as datagen_utils
+from allenact.utils.system import get_logger
+from allenact_plugins.ithor_plugin.ithor_sensors import (
+    BinnedPointCloudMapTHORSensor,
+    SemanticMapTHORSensor,
+)
+from allenact_plugins.ithor_plugin.ithor_util import get_open_x_displays
 from rearrange.baseline_models import (
     RearrangeActorCriticSimpleConvRNN,
     ResNetRearrangeActorCriticRNN,
@@ -240,11 +249,20 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
             if devices is not None and len(devices) > 0
             else torch.device("cpu")
         )
-        x_display = (
-            None
-            if device is None or device == torch.device("cpu")
-            else "0.{}".format(device)
-        )
+        x_display: Optional[str] = None
+        if platform.system() == "Linux":
+            x_displays = get_open_x_displays(throw_error_if_empty=True)
+
+            if len([d for d in devices if d != torch.device("cpu")]) > len(x_displays):
+                get_logger().warning(
+                    f"More GPU devices found than X-displays (devices: `{x_displays}`, x_displays: `{x_displays}`)."
+                    f" This is not necessarily a bad thing but may mean that you're not using GPU memory as"
+                    f" efficiently as possible. Consider following the instructions here:"
+                    f" https://allenact.org/installation/installation-framework/#installation-of-ithor-ithor-plugin"
+                    f" describing how to start an X-display on every GPU."
+                )
+            x_display = x_displays[process_ind % len(x_displays)]
+
         kwargs = {
             "stage": stage,
             "allowed_scenes": allowed_scenes,
@@ -256,12 +274,37 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
         sensors = kwargs.get("sensors", copy.deepcopy(cls.SENSORS))
         kwargs["sensors"] = sensors
 
+        sem_sensor = next(
+            (s for s in kwargs["sensors"] if isinstance(s, SemanticMapTHORSensor)), None
+        )
+        binned_pc_sensor = next(
+            (
+                s
+                for s in kwargs["sensors"]
+                if isinstance(s, BinnedPointCloudMapTHORSensor)
+            ),
+            None,
+        )
+
+        if sem_sensor is not None:
+            sem_sensor.device = torch.device(device)
+
+        if binned_pc_sensor is not None:
+            binned_pc_sensor.device = torch.device(device)
+
         if stage != "train":
-            # Don't include some sensors during validation/testing
+            # Don't include several sensors during validation/testing
             kwargs["sensors"] = [
                 s
                 for s in kwargs["sensors"]
-                if not isinstance(s, (ExpertActionSensor,),)
+                if not isinstance(
+                    s,
+                    (
+                        ExpertActionSensor,
+                        SemanticMapTHORSensor,
+                        BinnedPointCloudMapTHORSensor,
+                    ),
+                )
             ]
         return kwargs
 
