@@ -33,9 +33,9 @@ dependencies:
   - stringcase
   - packaging
   - pip:
-    - allenact
-    - allenact_plugins[ithor]
-    - "ai2thor>=2.7.2,<2.8.0"
+    - "allenact>=0.2.3"
+    - "allenact_plugins[ithor]>=0.2.3"
+    - "ai2thor>=2.7.2"
     - numpy-quaternion
     - docformatter==1.3.1
     - "gym>=0.17.0,<0.18.0"
