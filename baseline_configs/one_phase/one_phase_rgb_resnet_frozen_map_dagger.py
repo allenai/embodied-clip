@@ -1,9 +1,7 @@
 import os
-import urllib
 
 import gym
 import torch
-from ai2thor.util.lock import LockEx
 from torch import nn
 
 from allenact.base_abstractions.sensor import SensorSuite
@@ -11,7 +9,6 @@ from allenact.embodiedai.mapping.mapping_models.active_neural_slam import (
     ActiveNeuralSLAM,
 )
 from allenact.utils.misc_utils import multiprocessing_safe_download_file_from_url
-from allenact.utils.system import get_logger
 from allenact_plugins.ithor_plugin.ithor_sensors import (
     RelativePositionChangeTHORSensor,
     ReachableBoundsTHORSensor,
@@ -25,7 +22,6 @@ from rearrange.constants import (
     OPENABLE_OBJECTS,
 )
 from rearrange_constants import ABS_PATH_OF_REARRANGE_TOP_LEVEL_DIR
-import urllib.request
 
 
 class OnePhaseRGBResNetFrozenMapDaggerExperimentConfig(
