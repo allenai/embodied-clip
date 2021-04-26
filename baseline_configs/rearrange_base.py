@@ -10,9 +10,6 @@ import torchvision.models
 from torch import nn, cuda, optim
 from torch.optim.lr_scheduler import LambdaLR
 
-import datagen.datagen_runner
-import datagen.datagen_utils
-import datagen.datagen_utils
 import datagen.datagen_utils as datagen_utils
 from allenact.base_abstractions.experiment_config import (
     ExperimentConfig,
@@ -225,7 +222,7 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
                 scenes.append(other_scenes.pop())
             assert len(train_scenes) == len(other_scenes)
         else:
-            scenes = datagen.datagen_utils.get_scenes(stage)
+            scenes = datagen_utils.get_scenes(stage)
 
         if total_processes > len(scenes):
             assert stage == "train" and total_processes % len(scenes) == 0
