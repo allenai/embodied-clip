@@ -22,13 +22,15 @@ from torch.distributions.utils import lazy_property
 
 from allenact.utils.system import get_logger
 from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
-from allenact_plugins.ithor_plugin.ithor_util import round_to_factor
+from allenact_plugins.ithor_plugin.ithor_util import (
+    round_to_factor,
+    include_object_data,
+)
 from rearrange.constants import STEP_SIZE
 from rearrange.environment import (
     RearrangeTHOREnvironment,
     RearrangeMode,
 )
-from rearrange.utils import include_object_data
 
 if TYPE_CHECKING:
     from rearrange.tasks import UnshuffleTask

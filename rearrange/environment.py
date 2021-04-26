@@ -17,7 +17,10 @@ from torch.distributions.utils import lazy_property
 
 from allenact.utils.system import get_logger
 from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
-from allenact_plugins.ithor_plugin.ithor_util import round_to_factor
+from allenact_plugins.ithor_plugin.ithor_util import (
+    round_to_factor,
+    include_object_data,
+)
 from datagen.datagen_constants import OBJECT_TYPES_TO_NOT_MOVE
 from datagen.datagen_utils import (
     open_objs,
@@ -31,7 +34,6 @@ from rearrange.constants import (
 from rearrange.utils import (
     BoundedFloat,
     RearrangeActionSpace,
-    include_object_data,
     PoseMismatchError,
     ObjectInteractablePostionsCache,
     execute_action,
@@ -749,7 +751,7 @@ class RearrangeTHOREnvironment:
         `True` if the drop was successful, otherwise `False`.
         """
         if not self.shuffle_called:
-            raise Exception("Must be in shuffle phase.")
+            raise Exception("Must be in unshuffle stage.")
         if not self.mode == RearrangeMode.SNAP:
             raise Exception("Must be in RearrangeMode.SNAP mode.")
 

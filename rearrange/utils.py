@@ -9,6 +9,7 @@ import numpy as np
 from scipy.spatial.qhull import ConvexHull, Delaunay
 
 from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
+from allenact_plugins.ithor_plugin.ithor_util import include_object_data
 
 _UNIFORM_BOX_CACHE = {}
 
@@ -388,20 +389,6 @@ def iou_box_3d(b1: Sequence[Sequence[float]], b2: Sequence[Sequence[float]]) -> 
     intersect_vol = b2_vol * prop_intersection
 
     return intersect_vol / (b1_vol + b2_vol - intersect_vol)
-
-
-@contextmanager
-def include_object_data(controller: ai2thor.controller.Controller):
-    needs_reset = len(controller.last_event.metadata["objects"]) == 0
-    try:
-        if needs_reset:
-            controller.step("ResetObjectFilter")
-            assert controller.last_event.metadata["lastActionSuccess"]
-        yield None
-    finally:
-        if needs_reset:
-            controller.step("SetObjectFilter", objectIds=[])
-            assert controller.last_event.metadata["lastActionSuccess"]
 
 
 class PoseMismatchError(Exception):

@@ -63,6 +63,7 @@ class WalkthroughBaseExperimentConfig(RearrangeBaseExperimentConfig):
         **kwargs,
     ) -> RearrangeTaskSampler:
         """Return an RearrangeTaskSampler."""
+        sensors = cls.SENSORS if sensors is None else sensors
         if "mp_ctx" in kwargs:
             del kwargs["mp_ctx"]
         return RearrangeTaskSampler.from_fixed_dataset(
@@ -77,18 +78,16 @@ class WalkthroughBaseExperimentConfig(RearrangeBaseExperimentConfig):
                 controller_kwargs={
                     "x_display": x_display,
                     **cls.THOR_CONTROLLER_KWARGS,
+                    "renderDepthImage": any(
+                        isinstance(s, DepthSensor) for s in sensors
+                    ),
                     **(
                         {} if thor_controller_kwargs is None else thor_controller_kwargs
-                    ),
-                    "renderDepthImage": any(
-                        isinstance(s, DepthSensor) for s in cls.SENSORS
                     ),
                 },
             ),
             seed=seed,
-            sensors=SensorSuite(cls.SENSORS)
-            if sensors is None
-            else SensorSuite(sensors),
+            sensors=SensorSuite(sensors),
             max_steps=cls.MAX_STEPS,
             discrete_actions=cls.actions(),
             require_done_action=cls.REQUIRE_DONE_ACTION,

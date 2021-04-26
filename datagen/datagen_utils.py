@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from typing import List, Dict, Set, Union
+from typing import List, Dict, Set, Union, Optional, Tuple
 
 from ai2thor.controller import Controller
 

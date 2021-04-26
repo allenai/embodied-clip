@@ -3,9 +3,9 @@ from typing import Optional, Sequence, Dict, Type, Union
 
 import gym
 import gym.spaces
-from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
 from torch import nn
 
+from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
 from baseline_configs.rearrange_base import RearrangeBaseExperimentConfig
 from rearrange.baseline_models import (
     TwoPhaseRearrangeActorCriticSimpleConvRNN,
@@ -56,6 +56,8 @@ class TwoPhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
         **kwargs,
     ) -> RearrangeTaskSampler:
         """Return a RearrangeTaskSampler."""
+        sensors = cls.SENSORS if sensors is None else sensors
+
         if "mp_ctx" in kwargs:
             del kwargs["mp_ctx"]
         assert not cls.RANDOMIZE_START_ROTATION_DURING_TRAINING
@@ -76,14 +78,12 @@ class TwoPhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
                         {} if thor_controller_kwargs is None else thor_controller_kwargs
                     ),
                     "renderDepthImage": any(
-                        isinstance(s, DepthSensor) for s in cls.SENSORS
+                        isinstance(s, DepthSensor) for s in sensors
                     ),
                 },
             ),
             seed=seed,
-            sensors=SensorSuite(cls.SENSORS)
-            if sensors is None
-            else SensorSuite(sensors),
+            sensors=SensorSuite(sensors),
             max_steps=cls.MAX_STEPS,
             discrete_actions=cls.actions(),
             require_done_action=cls.REQUIRE_DONE_ACTION,

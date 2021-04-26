@@ -202,7 +202,7 @@ if os.path.exists(os.path.dirname(save_path)):
 else:
     print(
         f"If you'd like to save an example leaderboard submission, you'll need to edit"
-        '`/YOUR/FAVORITE/SAVE/PATH/` so that it references an existing directory.'
+        "`/YOUR/FAVORITE/SAVE/PATH/` so that it references an existing directory."
     )
 
 one_phase_rgb_combined_task_sampler.close()
