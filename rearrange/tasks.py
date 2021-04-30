@@ -253,6 +253,9 @@ class UnshuffleTask(AbstractRearrangeTask):
         return metrics
 
     def class_action_names(self, **kwargs) -> Tuple[str, ...]:
+        raise RuntimeError("This should not be called, use `action_names` instead.")
+
+    def action_names(self, **kwargs) -> Tuple[str, ...]:
         """Return the easy, simplified task's class names."""
         return self.discrete_actions
 
@@ -292,10 +295,10 @@ class UnshuffleTask(AbstractRearrangeTask):
 
     def _step(self, action: int) -> RLStepResult:
         """
-        :action: is the index of the action from self.class_action_names()
+        action : is the index of the action from self.action_names()
         """
         # parse the action data
-        action_name = self.class_action_names()[action]
+        action_name = self.action_names()[action]
 
         if action_name.startswith("pickup"):
             # NOTE: due to the object_id's not being in the metadata for speedups,
@@ -526,6 +529,9 @@ class WalkthroughTask(AbstractRearrangeTask):
         }
 
     def class_action_names(self, **kwargs) -> Tuple[str, ...]:
+        raise RuntimeError("This should not be called, use `action_names` instead.")
+
+    def action_names(self, **kwargs) -> Tuple[str, ...]:
         """Return the easy, simplified task's class names."""
         return self.discrete_actions
 
@@ -612,10 +618,10 @@ class WalkthroughTask(AbstractRearrangeTask):
         """Take a step in the task.
 
         # Parameters
-        action: is the index of the action from self.class_action_names()
+        action: is the index of the action from self.action_names()
         """
         # parse the action data
-        action_name = self.class_action_names()[action]
+        action_name = self.action_names()[action]
 
         if action_name.startswith("pickup"):
             # Don't allow the exploration agent to pickup objects
