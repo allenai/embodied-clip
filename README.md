@@ -531,7 +531,10 @@ These models can be downloaded at from the above links and should be placed into
 You can then, for example, run inference for the _1-Phase ResNet18 IL_ model using AllenAct by running:
 ```bash
 export CURRENT_TIME=$(date '+%Y-%m-%d_%H-%M-%S') # This is just to record when you ran this inference
-allenact baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py -c pretrained_model_ckpts/exp_OnePhaseRGBResNetDagger_40proc__stage_00__steps_000050058550.pt -t $CURRENT_TIME
+allenact baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py \
+-c pretrained_model_ckpts/exp_OnePhaseRGBResNetDagger_40proc__stage_00__steps_000050058550.pt \
+--extra_tag $CURRENT_TIME \
+--eval
 ```
 this will evaluate this model across all datapoints in the `data/combined.pkl.gz` dataset
 which contains data from the `train`, `train_unseen`, `val`, and `test` sets so that
