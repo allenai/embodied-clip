@@ -57,7 +57,8 @@ with open("README.md", "r") as f:
 <li><a href="#-datasets">📊 Datasets</a></li>
 </ul>
 </li>
-<li><a href="#-submitting-to-the-leaderboard">🛤️ Submitting to the Leaderboard</a></li>
+<li><a href="#-submitting-to-the-
+    ">🛤️ Submitting to the Leaderboard</a></li>
 <li><a href="#-allowed-observations">🖼️ Allowed Observations</a></li>
 <li><a href="#-allowed-actions">🏃 Allowed Actions</a></li>
 <li><a href="#-setting-up-rearrangement">🍽️ Setting up Rearrangement</a><ul>
@@ -214,7 +215,7 @@ be used for evaluation.
   
 ## 🛤️ Submitting to the Leaderboard
 
-We are tracking challenge participant entries using the [AI2 Leaderboard](https://leaderboard.allenai.org/).
+We are tracking challenge participant entries using the [AI2 Leaderboard](https://leaderboard.allenai.org/). The team with the best submission made to either of the below leaderboards by May 31st (midnight, [anywhere on earth](https://time.is/Anywhere_on_Earthv)) will be announced at the [CVPR'21 Embodied-AI Workshop](https://embodied-ai.org/) and invited to produce a video describing their approach.
 
 Submissions can be made to the 1-phase leaderboard [here](https://leaderboard.allenai.org/ithor_rearrangement_1phase)
 and submissions to the 2-phase leaderboard can be made [here](https://leaderboard.allenai.org/ithor_rearrangement_2phase).
