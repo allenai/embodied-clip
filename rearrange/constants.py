@@ -9,7 +9,7 @@ STARTER_DATA_DIR = os.path.join(
     os.path.abspath(os.path.dirname(Path(__file__))), "../data"
 )
 
-THOR_COMMIT_ID = "62bba7e2537fb6aaf2ed19125b9508c8b99bced3"
+THOR_COMMIT_ID = "f46d5ec42b65fdae9d9a48db2b4fb6d25afbd1fe"
 STEP_SIZE = 0.25
 
 # fmt: off
