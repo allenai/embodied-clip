@@ -522,10 +522,12 @@ on these models):
 
 | Model | % Fixed Strict (Test) | Pretrained Model |
 |------------|:----------:|:----------:|
+| [1-Phase ResNet18+ANM IL](baseline_configs/one_phase/one_phase_rgb_resnet_frozen_map_dagger.py) | 8.9% | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetFrozenMapDagger_40proc__stage_00__steps_000040060240.pt) |
 | [1-Phase ResNet18 IL](baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py) | 6.3% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetDagger_40proc__stage_00__steps_000050058550.pt) |
 | [1-Phase ResNet18 PPO](baseline_configs/one_phase/one_phase_rgb_resnet_ppo.py) | 5.3%| [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetPPO__stage_00__steps_000060068000.pt) |
 | [1-Phase Simple IL](baseline_configs/one_phase/one_phase_rgb_dagger.py) | 4.8% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBDagger_40proc__stage_00__steps_000065070800.pt) |
 | [1-Phase Simple PPO](baseline_configs/one_phase/one_phase_rgb_ppo.py) | 4.6% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBPPO__stage_00__steps_000010010730.pt) |
+| [2-Phase ResNet18+ANM IL+PPO](baseline_configs/two_phase_rgb_resnet_frozen_map_ppowalkthrough_ilunshuffle.py) | 1.44% | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetFrozenMapPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000075000985.pt) |
 | [2-Phase ResNet18 IL+PPO](baseline_configs/two_phase/two_phase_rgb_resnet_ppowalkthrough_ilunshuffle.py) | 0.66% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000020028800.pt) |
 
 These models can be downloaded at from the above links and should be placed into the `pretrained_model_ckpts` directory.
