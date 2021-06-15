@@ -1,6 +1,6 @@
-ai2thor>=2.7.2,<2.8.0
-allenact>=0.3.0
-allenact_plugins[ithor]>=0.3.0
+ai2thor>=2.7.2,!=2.8.0
+allenact>=0.4.0
+allenact_plugins[ithor]>=0.4.0
 numpy
 torch>1.6.0
 torchvision>=0.7.0

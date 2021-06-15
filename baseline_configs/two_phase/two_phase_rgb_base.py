@@ -5,7 +5,13 @@ import gym
 import gym.spaces
 from torch import nn
 
-from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
+from allenact.base_abstractions.sensor import SensorSuite, Sensor
+
+try:
+    from allenact.embodiedai.sensors.vision_sensors import DepthSensor
+except ImportError:
+    raise ImportError("Please update to allenact>=0.4.0.")
+
 from baseline_configs.rearrange_base import RearrangeBaseExperimentConfig
 from rearrange.baseline_models import (
     TwoPhaseRearrangeActorCriticSimpleConvRNN,

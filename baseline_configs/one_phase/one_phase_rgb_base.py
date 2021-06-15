@@ -1,7 +1,13 @@
 from abc import ABC
 from typing import Optional, Dict, Sequence
 
-from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
+from allenact.base_abstractions.sensor import SensorSuite, Sensor
+
+try:
+    from allenact.embodiedai.sensors.vision_sensors import DepthSensor
+except ImportError:
+    raise ImportError("Please update to allenact>=0.4.0.")
+
 from baseline_configs.rearrange_base import RearrangeBaseExperimentConfig
 from rearrange.sensors import (
     RGBRearrangeSensor,

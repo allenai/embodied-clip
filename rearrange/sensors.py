@@ -2,7 +2,13 @@ from typing import Any, Optional, Union
 
 import gym.spaces
 import numpy as np
-from allenact.base_abstractions.sensor import RGBSensor, Sensor
+from allenact.base_abstractions.sensor import Sensor
+
+try:
+    from allenact.embodiedai.sensors.vision_sensors import RGBSensor
+except ImportError:
+    raise ImportError("Please update to allenact>=0.4.0.")
+
 from allenact.utils.misc_utils import prepare_locals_for_super
 from allenact_plugins.robothor_plugin.robothor_sensors import DepthSensorThor
 
