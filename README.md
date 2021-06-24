@@ -138,7 +138,8 @@ or, if you prefer using conda, we can create a `thor-rearrange` environment with
 ```bash
 export MY_ENV_NAME=thor-rearrange
 export CONDA_BASE="$(dirname $(dirname "${CONDA_EXE}"))"
-PIP_SRC="${CONDA_BASE}/envs/${MY_ENV_NAME}/pipsrc" conda env create --file environment.yml --name $MY_ENV_NAME
+export PIP_SRC="${CONDA_BASE}/envs/${MY_ENV_NAME}/pipsrc"
+conda env create --file environment.yml --name $MY_ENV_NAME
 ```
 <details>
 <summary> <b> Why not just run <code>conda env create --file environment.yml --name thor-rearrange</code> by itself? </b></summary> 

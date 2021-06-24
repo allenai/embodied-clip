@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from typing import List, Dict, Set, Union, Optional, Tuple
+from typing import List, Dict, Set, Optional, Any
 
 from ai2thor.controller import Controller
 
@@ -45,11 +45,44 @@ def filter_pickupable(
     ]
 
 
+def get_random_seeds(max_seed: int = int(1e8)) -> Dict[str, int]:
+    # Generate random seeds for each stage
+
+    # Train seed
+    random.seed(1329328939)
+    train_seed = random.randint(0, max_seed - 1)
+
+    # Train unseen seed
+    random.seed(709384928)
+    train_unseen_seed = random.randint(0, max_seed - 1)
+
+    # val seed
+    random.seed(3348958620)
+    val_seed = random.randint(0, max_seed - 1)
+
+    # test seed
+    random.seed(289123396)
+    test_seed = random.randint(0, max_seed - 1)
+
+    # Debug seed
+    random.seed(239084231)
+    debug_seed = random.randint(0, max_seed - 1)
+
+    return {
+        "train": train_seed,
+        "train_unseen": train_unseen_seed,
+        "val": val_seed,
+        "valid": val_seed,
+        "test": test_seed,
+        "debug": debug_seed,
+    }
+
+
 def open_objs(
-    objects_to_open: List[dict], controller: Controller
-) -> Dict[int, Union[float, None]]:
+    objects_to_open: List[Dict[str, Any]], controller: Controller
+) -> Dict[str, Optional[float]]:
     """Opens up the chosen pickupable objects if they're openable."""
-    out: Dict[int, Union[float, None]] = defaultdict(lambda: None)
+    out: Dict[str, Optional[float]] = defaultdict(lambda: None)
     for obj in objects_to_open:
         last_openness = obj["openness"]
         new_openness = last_openness
