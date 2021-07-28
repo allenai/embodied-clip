@@ -1,0 +1,25 @@
+cff-version: 1.1.0
+message: "To cite this work, please cite our paper."
+abstract: There has been a significant recent progress in the field of Embodied AI with researchers developing models and algorithms enabling embodied agents to navigate and interact within completely unseen environments. In this paper, we propose a new dataset and baseline models for the task of Rearrangement. We particularly focus on the task of Room Rearrangement: an agent begins by exploring a room and recording objects' initial configurations. We then remove the agent and change the poses and states (e.g., open/closed) of some objects in the room. The agent must restore the initial configurations of all objects in the room. Our dataset, named RoomR, includes 6,000 distinct rearrangement settings involving 72 different object types in 120 scenes. Our experiments show that solving this challenging interactive task that involves navigation and object interaction is beyond the capabilities of the current state-of-the-art techniques for embodied tasks and we are still very far from achieving perfect performance on these types of tasks.
+authors:
+  - family-names: Weihs
+    given-names: Luca
+  - family-names: Deitke
+    given-names: Matt
+  - family-names: Kembhavi
+    given-names: Aniruddha
+  - family-names: Mottaghi
+    given-names: Roozbeh
+title: Visual Room Rearrangement
+version: 1.0.0
+date-released: 2021-03-30
+keywords:
+  - computer vision
+  - rearrangement
+  - embodied ai
+  - AI2-THOR
+  - reinforcement learning
+  - imitation learning
+  - AllenAct
+  - artificial intelligence
+license: "Apache-2.0 License"
