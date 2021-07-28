@@ -16,7 +16,7 @@ authors:
   orcid: ""
 title: "Visual Room Rearrangement"
 version: 1.0.0
-date-released: 2021-03-30
+date-released: 2021-06-19
 keywords:
   - computer vision
   - rearrangement
@@ -28,3 +28,4 @@ keywords:
   - artificial intelligence
 license: "Apache-2.0 License"
 url: "https://ai2thor.allenai.org/rearrangement/"
+conference: "IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)"
