@@ -250,7 +250,9 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
         if platform.system() == "Linux":
             x_displays = get_open_x_displays(throw_error_if_empty=True)
 
-            if len([d for d in devices if d != torch.device("cpu")]) > len(x_displays):
+            if devices is not None and len(
+                [d for d in devices if d != torch.device("cpu")]
+            ) > len(x_displays):
                 get_logger().warning(
                     f"More GPU devices found than X-displays (devices: `{x_displays}`, x_displays: `{x_displays}`)."
                     f" This is not necessarily a bad thing but may mean that you're not using GPU memory as"
