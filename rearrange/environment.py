@@ -1009,7 +1009,7 @@ class RearrangeTHOREnvironment:
         if pose_diff["broken"]:
             return 1.0
 
-        if pose_diff["openness_diff"] is None:
+        if pose_diff["openness_diff"] is None or goal_pose["pickupable"]:
             gbb = np.array(goal_pose["bounding_box"])
             cbb = np.array(cur_pose["bounding_box"])
 
