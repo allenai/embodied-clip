@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import warnings
 from typing import List, Optional, Union
 
@@ -217,6 +218,11 @@ def get_config(
     if opts:
         config.CMD_TRAILING_OPTS = config.CMD_TRAILING_OPTS + opts
         config.merge_from_list(config.CMD_TRAILING_OPTS)
+
+    config.TENSORBOARD_DIR = os.path.expanduser(config.TENSORBOARD_DIR)
+    config.VIDEO_DIR = os.path.expanduser(config.VIDEO_DIR)
+    config.CHECKPOINT_FOLDER = os.path.expanduser(config.CHECKPOINT_FOLDER)
+    config.EVAL_CKPT_PATH_DIR = os.path.expanduser(config.EVAL_CKPT_PATH_DIR)
 
     if config.NUM_PROCESSES != -1:
         warnings.warn(

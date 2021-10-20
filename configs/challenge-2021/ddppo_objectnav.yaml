@@ -8,10 +8,10 @@ SENSORS: ["DEPTH_SENSOR", "RGB_SENSOR"]
 
 LOG_INTERVAL: 10
 VIDEO_OPTION: []
-TENSORBOARD_DIR: "logs/objectnav-2021-baseline/tb"
-VIDEO_DIR: "logs/objectnav-2021-baseline/video_dir"
-CHECKPOINT_FOLDER: "logs/objectnav-2021-baseline"
-EVAL_CKPT_PATH_DIR: "logs/objectnav-2021-baseline"
+TENSORBOARD_DIR: "~/logs/objectnav-2021-baseline/tb"
+VIDEO_DIR: "~/logs/objectnav-2021-baseline/video_dir"
+CHECKPOINT_FOLDER: "~/logs/objectnav-2021-baseline"
+EVAL_CKPT_PATH_DIR: "~/logs/objectnav-2021-baseline"
 
 TEST_EPISODE_COUNT: -1
 EVAL:
