@@ -13,7 +13,7 @@ import torch
 from habitat.config import Config
 from habitat_baselines.common.baseline_registry import baseline_registry
 from habitat_baselines.config.default import get_config
-
+from habitat_baselines.rl.ddppo.algo.ddp_utils import get_distrib_size
 
 def main():
     parser = argparse.ArgumentParser()
@@ -39,7 +39,6 @@ def main():
     args = parser.parse_args()
     run_exp(**vars(args))
 
-
 def execute_exp(config: Config, run_type: str) -> None:
     r"""This function runs the specified config with the specified runtype
     Args:
@@ -57,7 +56,20 @@ def execute_exp(config: Config, run_type: str) -> None:
     trainer = trainer_init(config)
 
     if run_type == "train":
-        trainer.train()
+
+        eval_checkpoint_fn = None
+        if config.EVAL_DURING_TRAIN and get_distrib_size()[1] == 0:  # world_rank == 0
+                eval_config = config.clone()
+                eval_config.defrost()
+                eval_config.NUM_ENVIRONMENTS = eval_config.EVAL.NUM_ENVIRONMENTS
+                eval_config.freeze()
+                eval_trainer = trainer_init(eval_config)
+                eval_trainer.device = torch.device("cuda", 0)
+                eval_trainer._is_distributed = False
+                eval_checkpoint_fn = eval_trainer._eval_checkpoint
+
+        trainer.train(eval_checkpoint_fn)
+
     elif run_type == "eval":
         trainer.eval()
 

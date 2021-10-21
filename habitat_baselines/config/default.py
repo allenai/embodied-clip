@@ -40,6 +40,8 @@ _C.NUM_UPDATES = 10000
 _C.NUM_CHECKPOINTS = 10
 # Number of model updates between checkpoints
 _C.CHECKPOINT_INTERVAL = -1
+# Evaluate each checkpoint during train (on GPU 0)
+_C.EVAL_DURING_TRAIN = False
 _C.TOTAL_NUM_STEPS = -1.0
 _C.LOG_INTERVAL = 10
 _C.LOG_FILE = "train.log"
@@ -58,7 +60,7 @@ _C.FORCE_TORCH_SINGLE_THREADED = False
 # EVAL CONFIG
 # -----------------------------------------------------------------------------
 _C.EVAL = CN()
-# The split to evaluate on
+_C.EVAL.NUM_ENVIRONMENTS = 1
 _C.EVAL.SPLIT = "val"
 _C.EVAL.USE_CKPT_CONFIG = True
 # -----------------------------------------------------------------------------
@@ -219,6 +221,8 @@ def get_config(
         config.CMD_TRAILING_OPTS = config.CMD_TRAILING_OPTS + opts
         config.merge_from_list(config.CMD_TRAILING_OPTS)
 
+    os.makedirs(os.path.dirname(os.path.expanduser(config.LOG_FILE)), exist_ok=True)
+    config.LOG_FILE = os.path.expanduser(config.LOG_FILE)
     config.TENSORBOARD_DIR = os.path.expanduser(config.TENSORBOARD_DIR)
     config.VIDEO_DIR = os.path.expanduser(config.VIDEO_DIR)
     config.CHECKPOINT_FOLDER = os.path.expanduser(config.CHECKPOINT_FOLDER)

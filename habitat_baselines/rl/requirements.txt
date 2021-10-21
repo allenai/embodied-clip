@@ -1,4 +1,4 @@
-moviepy>=1.0.1
+moviepy==1.0.3
 torch>=1.3.1
 # full tensorflow required for tensorboard video support
 tensorflow==1.13.1

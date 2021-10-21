@@ -674,7 +674,7 @@ class PPOTrainer(BaseRLTrainer):
         )
 
     @profiling_wrapper.RangeContext("train")
-    def train(self) -> None:
+    def train(self, eval_checkpoint_fn=None) -> None:
         r"""Main method for training DD/PPO.
 
         Returns:
@@ -824,6 +824,12 @@ class PPOTrainer(BaseRLTrainer):
                             wall_time=(time.time() - self.t_start) + prev_time,
                         ),
                     )
+                    if eval_checkpoint_fn is not None:
+                        eval_checkpoint_fn(
+                            os.path.join(self.config.CHECKPOINT_FOLDER, f"ckpt.{count_checkpoints}.pth"),
+                            writer,
+                            checkpoint_index=count_checkpoints
+                        )
                     count_checkpoints += 1
 
                 profiling_wrapper.range_pop()  # train update
