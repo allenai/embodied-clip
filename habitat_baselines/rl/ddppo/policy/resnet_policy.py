@@ -12,6 +12,7 @@ import torch
 from gym import spaces
 from torch import nn as nn
 from torch.nn import functional as F
+from torchvision import transforms, models
 
 from habitat.config import Config
 from habitat.tasks.nav.nav import (
@@ -173,7 +174,6 @@ class ResNetEncoder(nn.Module):
 
             # permute tensor to dimension [BATCH x CHANNEL x HEIGHT X WIDTH]
             depth_observations = depth_observations.permute(0, 3, 1, 2)
-
             cnn_input.append(depth_observations)
 
         x = torch.cat(cnn_input, dim=1)
@@ -182,6 +182,54 @@ class ResNetEncoder(nn.Module):
         x = self.running_mean_and_var(x)
         x = self.backbone(x)
         x = self.compression(x)
+        return x
+
+
+class ResNetImageNetEncoder(nn.Module):
+    def __init__(self, observation_space: spaces.Dict):
+        super().__init__()
+
+        self.rgb = "rgb" in observation_space.spaces
+        self.depth = "depth" in observation_space.spaces
+
+        if not self.is_blind:
+            self.normalize = transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            )
+            self.backbone = models.resnet50(pretrained=True)
+            self.backbone.fc = nn.Identity()
+            self.output_shape = (2048 * (self.rgb + self.depth),)
+
+    @property
+    def is_blind(self):
+        return self.rgb is False and self.depth is False
+
+    def forward(self, observations: Dict[str, torch.Tensor]) -> torch.Tensor:  # type: ignore
+        if self.is_blind:
+            return None
+
+        x = []
+
+        if self.rgb:
+            rgb_observations = observations["rgb"]
+            # permute tensor to dimension [BATCH x CHANNEL x HEIGHT X WIDTH]
+            rgb_observations = rgb_observations.permute(0, 3, 1, 2)
+            rgb_observations = (rgb_observations.float() / 255.0)  # normalize RGB
+            rgb_x = torch.stack([self.normalize(rgb) for rgb in rgb_observations])
+            rgb_x = self.backbone(rgb_x)
+            x.append(rgb_x)
+
+        if self.depth:
+            depth_observations = observations["depth"]
+            # permute tensor to dimension [BATCH x CHANNEL x HEIGHT X WIDTH]
+            depth_observations = depth_observations.permute(0, 3, 1, 2).float()
+            depth_observations = torch.tile(depth_observations, (1, 3, 1, 1))
+            depth_x = torch.stack([self.normalize(depth) for depth in depth_observations])
+            depth_x = self.backbone(x)
+            x.append(depth_x)
+
+        x = torch.cat(x, dim=1)
         return x
 
 
@@ -277,42 +325,57 @@ class PointNavResNetNet(Net):
             goal_observation_space = spaces.Dict(
                 {"rgb": observation_space.spaces[ImageGoalSensor.cls_uuid]}
             )
-            self.goal_visual_encoder = ResNetEncoder(
-                goal_observation_space,
-                baseplanes=resnet_baseplanes,
-                ngroups=resnet_baseplanes // 2,
-                make_backbone=getattr(resnet, backbone),
-                normalize_visual_inputs=normalize_visual_inputs,
-            )
-
-            self.goal_visual_fc = nn.Sequential(
-                nn.Flatten(),
-                nn.Linear(
-                    np.prod(self.goal_visual_encoder.output_shape), hidden_size
-                ),
-                nn.ReLU(True),
-            )
+            if backbone == "resnet50_imagenet":
+                self.goal_visual_encoder = ResNetImageNetEncoder(goal_observation_space)
+                self.goal_visual_fc = nn.Sequential(
+                    nn.Linear(self.goal_visual_encoder.output_shape[0], hidden_size),
+                    nn.ReLU(True),
+                )
+            else:
+                self.goal_visual_encoder = ResNetEncoder(
+                    goal_observation_space,
+                    baseplanes=resnet_baseplanes,
+                    ngroups=resnet_baseplanes // 2,
+                    make_backbone=getattr(resnet, backbone),
+                    normalize_visual_inputs=normalize_visual_inputs,
+                )
+                self.goal_visual_fc = nn.Sequential(
+                    nn.Flatten(),
+                    nn.Linear(
+                        np.prod(self.goal_visual_encoder.output_shape), hidden_size
+                    ),
+                    nn.ReLU(True),
+                )
 
             rnn_input_size += hidden_size
 
         self._hidden_size = hidden_size
 
-        self.visual_encoder = ResNetEncoder(
-            observation_space if not force_blind_policy else spaces.Dict({}),
-            baseplanes=resnet_baseplanes,
-            ngroups=resnet_baseplanes // 2,
-            make_backbone=getattr(resnet, backbone),
-            normalize_visual_inputs=normalize_visual_inputs,
-        )
-
-        if not self.visual_encoder.is_blind:
-            self.visual_fc = nn.Sequential(
-                nn.Flatten(),
-                nn.Linear(
-                    np.prod(self.visual_encoder.output_shape), hidden_size
-                ),
-                nn.ReLU(True),
+        if backbone == "resnet50_imagenet":
+                self.visual_encoder = ResNetImageNetEncoder(
+                    observation_space if not force_blind_policy else spaces.Dict({}),
+                )
+                if not self.visual_encoder.is_blind:
+                    self.visual_fc = nn.Sequential(
+                        nn.Linear(self.visual_encoder.output_shape[0], hidden_size),
+                        nn.ReLU(True),
+                    )
+        else:
+            self.visual_encoder = ResNetEncoder(
+                observation_space if not force_blind_policy else spaces.Dict({}),
+                baseplanes=resnet_baseplanes,
+                ngroups=resnet_baseplanes // 2,
+                make_backbone=getattr(resnet, backbone),
+                normalize_visual_inputs=normalize_visual_inputs,
             )
+            if not self.visual_encoder.is_blind:
+                self.visual_fc = nn.Sequential(
+                    nn.Flatten(),
+                    nn.Linear(
+                        np.prod(self.visual_encoder.output_shape), hidden_size
+                    ),
+                    nn.ReLU(True),
+                )
 
         self.state_encoder = build_rnn_state_encoder(
             (0 if self.is_blind else self._hidden_size) + rnn_input_size,
