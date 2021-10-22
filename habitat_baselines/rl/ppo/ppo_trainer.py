@@ -18,6 +18,11 @@ from gym import spaces
 from torch import nn
 from torch.optim.lr_scheduler import LambdaLR
 
+from torch import multiprocessing as mp
+from habitat.utils.pickle5_multiprocessing import ConnectionWrapper
+from habitat.core.vector_env import _WriteWrapper, _ReadWrapper
+from typing import cast
+
 from habitat import Config, VectorEnv, logger
 from habitat.utils import profiling_wrapper
 from habitat.utils.visualizations.utils import observations_to_image
@@ -310,6 +315,63 @@ class PPOTrainer(BaseRLTrainer):
         self.env_time = 0.0
         self.pth_time = 0.0
         self.t_start = time.time()
+
+    @staticmethod
+    def _val_worker(
+        connection_read_fn,
+        connection_write_fn,
+        eval_config,
+        child_pipe = None,
+        parent_pipe = None,
+    ):
+        eval_config.defrost()
+        eval_config.NUM_ENVIRONMENTS = eval_config.EVAL.NUM_ENVIRONMENTS
+        eval_config.freeze()
+
+        eval_trainer = PPOTrainer(eval_config)
+        eval_trainer.device = torch.device(eval_config.EVAL.DEVICE)
+        eval_trainer._is_distributed = False
+
+        if parent_pipe is not None:
+            parent_pipe.close()
+        try:
+            while True:
+                command, data = connection_read_fn()
+                if command == "close":
+                    break
+                eval_trainer._eval_checkpoint(*data)
+                connection_write_fn(None)
+        except KeyboardInterrupt:
+            logger.info("Worker KeyboardInterrupt")
+        finally:
+            if child_pipe is not None:
+                child_pipe.close()
+
+    def _init_val(self):
+        _mp_ctx = mp.get_context('forkserver')
+        parent_conn, worker_conn = (ConnectionWrapper(c) for c in _mp_ctx.Pipe(duplex=True))
+        ps = _mp_ctx.Process(
+            target=self._val_worker,
+            args=(
+                worker_conn.recv,
+                worker_conn.send,
+                self.config.clone(),
+                worker_conn,
+                parent_conn,
+            ),
+            daemon=False
+        )
+        self._val_worker_ps = cast(mp.Process, ps)
+        ps.start()
+        worker_conn.close()
+        self._val_read_fn = _ReadWrapper(parent_conn.recv, 0)
+        self._val_write_fn = _WriteWrapper(parent_conn.send, self._val_read_fn)
+
+    def _close_val(self):
+        if self._val_read_fn.is_waiting:
+            self._val_read_fn()
+        self._val_write_fn(('close', None))
+        self._val_worker_ps.join()
 
     @rank0_only
     @profiling_wrapper.RangeContext("save_checkpoint")
@@ -674,7 +736,7 @@ class PPOTrainer(BaseRLTrainer):
         )
 
     @profiling_wrapper.RangeContext("train")
-    def train(self, eval_checkpoint_fn=None) -> None:
+    def train(self) -> None:
         r"""Main method for training DD/PPO.
 
         Returns:
@@ -714,15 +776,18 @@ class PPOTrainer(BaseRLTrainer):
                 "_last_checkpoint_percent"
             ]
 
+        world_rank = get_distrib_size()[1]
+        if self.config.EVAL_DURING_TRAIN and world_rank == 0:
+            self._init_val()
+
         ppo_cfg = self.config.RL.PPO
 
+        writer_args = dict(log_dir=self.config.TENSORBOARD_DIR, flush_secs=self.flush_secs)
         with (
-            TensorboardWriter(
-                self.config.TENSORBOARD_DIR, flush_secs=self.flush_secs
-            )
-            if rank0_only()
+            TensorboardWriter(**writer_args) if rank0_only()
             else contextlib.suppress()
         ) as writer:
+
             while not self.is_done():
                 profiling_wrapper.on_start_step()
                 profiling_wrapper.range_push("train update")
@@ -824,11 +889,11 @@ class PPOTrainer(BaseRLTrainer):
                             wall_time=(time.time() - self.t_start) + prev_time,
                         ),
                     )
-                    if eval_checkpoint_fn is not None:
-                        eval_checkpoint_fn(
+                    if self.config.EVAL_DURING_TRAIN and world_rank == 0:
+                        self.validate_checkpoint(
                             os.path.join(self.config.CHECKPOINT_FOLDER, f"ckpt.{count_checkpoints}.pth"),
-                            writer,
-                            checkpoint_index=count_checkpoints
+                            writer_args,
+                            count_checkpoints
                         )
                     count_checkpoints += 1
 
@@ -836,10 +901,22 @@ class PPOTrainer(BaseRLTrainer):
 
             self.envs.close()
 
+        if self.config.EVAL_DURING_TRAIN and world_rank == 0:
+            self._close_val()
+
+    def validate_checkpoint(self,
+        checkpoint_path: str,
+        writer_args,
+        checkpoint_index: int = 0,
+    ) -> None:
+        self._val_write_fn(('eval', (checkpoint_path, None, writer_args, checkpoint_index)))
+        _ = self._val_read_fn()
+
     def _eval_checkpoint(
         self,
         checkpoint_path: str,
-        writer: TensorboardWriter,
+        writer: TensorboardWriter = None,
+        writer_args = None,
         checkpoint_index: int = 0,
     ) -> None:
         r"""Evaluates a single checkpoint.
@@ -854,6 +931,9 @@ class PPOTrainer(BaseRLTrainer):
         """
         if self._is_distributed:
             raise RuntimeError("Evaluation does not support distributed mode")
+
+        if writer is None:
+            writer = TensorboardWriter(**writer_args)
 
         # Map location CPU is almost always better than mapping to a CUDA device.
         ckpt_dict = self.load_checkpoint(checkpoint_path, map_location="cpu")
