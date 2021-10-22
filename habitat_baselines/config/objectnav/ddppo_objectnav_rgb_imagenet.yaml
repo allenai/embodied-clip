@@ -1,27 +1,28 @@
 BASE_TASK_CONFIG_PATH: "configs/challenge-2021/challenge_objectnav2021.local.rgbd.yaml"
 TRAINER_NAME: "ddppo"
 ENV_NAME: "NavRLEnv"
-# SENSORS: ["DEPTH_SENSOR", "RGB_SENSOR"]
 SENSORS: ["RGB_SENSOR"]
 
-NUM_ENVIRONMENTS: 8
-NUM_UPDATES: 270000
+NUM_ENVIRONMENTS: 16
+TOTAL_NUM_STEPS: 2.5e8
+NUM_UPDATES: -1
 CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000"]
 FORCE_TORCH_SINGLE_THREADED: True
 
 LOG_INTERVAL: 10
-LOG_FILE: "~/logs/objectnav-2021-baseline/train.log"
+LOG_FILE: "~/logs/objectnav-rgb-imagenet/train.log"
 VIDEO_OPTION: ["tensorboard"]
-TENSORBOARD_DIR: "~/logs/objectnav-2021-baseline/tb"
+TENSORBOARD_DIR: "~/logs/objectnav-rgb-imagenet/tb"
 
-CHECKPOINT_FOLDER: "~/logs/objectnav-2021-baseline"
-EVAL_CKPT_PATH_DIR: "~/logs/objectnav-2021-baseline"
-NUM_CHECKPOINTS: -1
-CHECKPOINT_INTERVAL: 500
+CHECKPOINT_FOLDER: "~/logs/objectnav-rgb-imagenet"
+EVAL_CKPT_PATH_DIR: "~/logs/objectnav-rgb-imagenet"
+NUM_CHECKPOINTS: 500
+CHECKPOINT_INTERVAL: -1
 EVAL_DURING_TRAIN: True
 TEST_EPISODE_COUNT: -1
 EVAL:
   USE_CKPT_CONFIG: False
+  DEVICE: 'cuda:0'
   NUM_ENVIRONMENTS: 1
   SPLIT: val_mini
 
@@ -52,7 +53,6 @@ RL:
     use_linear_lr_decay: False
     reward_window_size: 50
     use_normalized_advantage: False
-
     hidden_size: 512
 
   DDPPO:
@@ -74,4 +74,3 @@ RL:
     backbone: resnet50_imagenet
     rnn_type: LSTM
     num_recurrent_layers: 2
-
