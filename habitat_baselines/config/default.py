@@ -60,6 +60,7 @@ _C.FORCE_TORCH_SINGLE_THREADED = False
 # EVAL CONFIG
 # -----------------------------------------------------------------------------
 _C.EVAL = CN()
+_C.EVAL.DEVICE = "cpu"
 _C.EVAL.NUM_ENVIRONMENTS = 1
 _C.EVAL.SPLIT = "val"
 _C.EVAL.USE_CKPT_CONFIG = True
