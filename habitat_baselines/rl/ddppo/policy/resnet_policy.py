@@ -199,7 +199,7 @@ class ResNetImageNetEncoder(nn.Module):
             )
             self.backbone = models.resnet50(pretrained=True)
             self.backbone.fc = nn.Identity()
-            self.output_shape = (2048 * (self.rgb + self.depth),)
+            self.output_shape = (2048,)
 
     @property
     def is_blind(self):
@@ -209,7 +209,8 @@ class ResNetImageNetEncoder(nn.Module):
         if self.is_blind:
             return None
 
-        x = []
+        B = observations["rgb"].shape[0] if self.rgb else observations["depth"].shape[0]
+        x = torch.zeros(B, 2048, device=self.device)
 
         if self.rgb:
             rgb_observations = observations["rgb"]
@@ -218,18 +219,15 @@ class ResNetImageNetEncoder(nn.Module):
             rgb_observations = (rgb_observations.float() / 255.0)  # normalize RGB
             rgb_x = torch.stack([self.normalize(rgb) for rgb in rgb_observations])
             rgb_x = self.backbone(rgb_x)
-            x.append(rgb_x)
+            x += rgb_x
 
         if self.depth:
-            depth_observations = observations["depth"]
-            # permute tensor to dimension [BATCH x CHANNEL x HEIGHT X WIDTH]
-            depth_observations = depth_observations.permute(0, 3, 1, 2).float()
-            depth_observations = torch.tile(depth_observations, (1, 3, 1, 1))
-            depth_x = torch.stack([self.normalize(depth) for depth in depth_observations])
-            depth_x = self.backbone(x)
-            x.append(depth_x)
+            depth_observations = observations["depth"][..., 0]  # [BATCH x HEIGHT X WIDTH]
+            ddd = torch.stack([depth_observations] * 3, dim=1)
+            depth_x = torch.stack([self.normalize(depth_map) for depth_map in ddd])
+            depth_x = self.backbone(depth_x)
+            x += depth_x
 
-        x = torch.cat(x, dim=1)
         return x
 
 
