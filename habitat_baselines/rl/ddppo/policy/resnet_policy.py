@@ -209,26 +209,23 @@ class ResNetImageNetEncoder(nn.Module):
         if self.is_blind:
             return None
 
-        B = observations["rgb"].shape[0] if self.rgb else observations["depth"].shape[0]
-        x = torch.zeros(B, 2048, device=self.device)
-
+        rgb_x = 0
         if self.rgb:
             rgb_observations = observations["rgb"]
             # permute tensor to dimension [BATCH x CHANNEL x HEIGHT X WIDTH]
             rgb_observations = rgb_observations.permute(0, 3, 1, 2)
             rgb_observations = (rgb_observations.float() / 255.0)  # normalize RGB
-            rgb_x = torch.stack([self.normalize(rgb) for rgb in rgb_observations])
-            rgb_x = self.backbone(rgb_x)
-            x += rgb_x
+            rgb_observations = torch.stack([self.normalize(rgb) for rgb in rgb_observations])
+            rgb_x = self.backbone(rgb_observations).float()
 
+        depth_x = 0
         if self.depth:
             depth_observations = observations["depth"][..., 0]  # [BATCH x HEIGHT X WIDTH]
             ddd = torch.stack([depth_observations] * 3, dim=1)
-            depth_x = torch.stack([self.normalize(depth_map) for depth_map in ddd])
-            depth_x = self.backbone(depth_x)
-            x += depth_x
+            ddd = torch.stack([self.normalize(depth_map) for depth_map in ddd])
+            depth_x = self.backbone(ddd).float()
 
-        return x
+        return rgb_x + depth_x
 
 
 class PointNavResNetNet(Net):

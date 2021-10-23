@@ -340,7 +340,7 @@ class PPOTrainer(BaseRLTrainer):
                 if command == "close":
                     break
                 eval_trainer._eval_checkpoint(*data)
-                connection_write_fn(None)
+                connection_write_fn("Evaluated checkpoint")
         except KeyboardInterrupt:
             logger.info("Worker KeyboardInterrupt")
         finally:
