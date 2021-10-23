@@ -60,24 +60,25 @@ If you use the Habitat platform in your research, please cite the following [pap
 
 ## Installation
 
+```
+conda create -n habitat python=3.6 cmake=3.14.0
+conda activate habitat
+```
+
 1. Clone a stable version from the github repository and install habitat-lab using the commands below. Note that python>=3.6 is required for working with habitat-lab. All the development and testing was done using python3.6. Please use 3.6 to avoid possible issues.
 
     ```bash
-    git clone --branch stable https://github.com/facebookresearch/habitat-lab.git
-    cd habitat-lab
-    pip install -e .
-    ```
-
-    The command above will install only core of Habitat Lab. To include habitat_baselines along with all additional requirements, use the command below instead:
-
-    ```bash
-    git clone --branch stable https://github.com/facebookresearch/habitat-lab.git
+    git clone https://github.com/allenai/clip-habitat.git
     cd habitat-lab
     pip install -r requirements.txt
     python setup.py develop --all # install habitat and habitat_baselines
     ```
 
 2. Install `habitat-sim` from [github repo](https://github.com/facebookresearch/habitat-sim).
+
+    ```bash
+    conda install habitat-sim==0.1.7 withbullet headless -c conda-forge -c aihabitat
+    ```
 
 3. Download the [test scenes data](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract `data` folder in zip to `habitat-lab/data/` where `habitat-lab/` is the github repository folder.
 
