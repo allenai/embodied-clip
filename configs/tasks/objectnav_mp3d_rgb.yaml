@@ -1,13 +1,12 @@
 ENVIRONMENT:
   MAX_EPISODE_STEPS: 500
-  ITERATOR_OPTIONS:
-    SHUFFLE: False
+
 SIMULATOR:
   TURN_ANGLE: 30
   TILT_ANGLE: 30
   ACTION_SPACE_CONFIG: "v1"
   AGENT_0:
-    SENSORS: ['RGB_SENSOR', 'DEPTH_SENSOR']
+    SENSORS: ['RGB_SENSOR']
     HEIGHT: 0.88
     RADIUS: 0.18
   HABITAT_SIM_V0:
@@ -47,6 +46,6 @@ TASK:
 
 DATASET:
   TYPE: ObjectNav-v1
-  SPLIT: val_mini
-  DATA_PATH: "data/challenge-data/objectgoal_mp3d/{split}/{split}.json.gz"
+  SPLIT: train
+  DATA_PATH: "data/datasets/objectnav/mp3d/v1/{split}/{split}.json.gz"
   SCENES_DIR: "data/scene_datasets/"
