@@ -1,37 +1,38 @@
-BASE_TASK_CONFIG_PATH: "configs/challenge-2021/challenge_objectnav2021.local.rgbd.yaml"
+BASE_TASK_CONFIG_PATH: "configs/tasks/objectnav_mp3d_rgbd.yaml"
 TRAINER_NAME: "ddppo"
 ENV_NAME: "NavRLEnv"
 SENSORS: ["DEPTH_SENSOR", "RGB_SENSOR"]
 
-SIMULATOR_GPU_ID: 0
-TORCH_GPU_ID: 0
-NUM_ENVIRONMENTS: 4
-NUM_UPDATES: 270000
+NUM_ENVIRONMENTS: 20
+TOTAL_NUM_STEPS: 2.5e8
+NUM_UPDATES: -1
 CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000"]
 FORCE_TORCH_SINGLE_THREADED: True
 
 LOG_INTERVAL: 10
-LOG_FILE: "~/logs/objectnav-2021-baseline/train.log"
+LOG_FILE: "~/logs/objectnav-rgbd-baseline/train.log"
 VIDEO_OPTION: ["tensorboard"]
-TENSORBOARD_DIR: "~/logs/objectnav-2021-baseline/tb"
+TENSORBOARD_DIR: "~/logs/objectnav-rgbd-baseline/tb"
 
-CHECKPOINT_FOLDER: "~/logs/objectnav-2021-baseline"
-EVAL_CKPT_PATH_DIR: "~/logs/objectnav-2021-baseline"
-NUM_CHECKPOINTS: -1
-CHECKPOINT_INTERVAL: 500
+CHECKPOINT_FOLDER: "~/logs/objectnav-rgbd-baseline"
+EVAL_CKPT_PATH_DIR: "~/logs/objectnav-rgbd-baseline"
+NUM_CHECKPOINTS: 500
+CHECKPOINT_INTERVAL: -1
 EVAL_DURING_TRAIN: True
 TEST_EPISODE_COUNT: -1
 EVAL:
-  USE_CKPT_CONFIG: True
+  USE_CKPT_CONFIG: False
+  DEVICE: 'cpu'
   NUM_ENVIRONMENTS: 1
   SPLIT: val_mini
+
 
 RL:
   SUCCESS_REWARD: 2.5
   SLACK_REWARD: -1e-3
 
   POLICY:
-    name: "ObjectNavResNetPolicy"
+    name: "PointNavResNetPolicy"
     OBS_TRANSFORMS:
         ENABLED_TRANSFORMS: ("ResizeShortestEdge", "CenterCropper")
 
@@ -59,7 +60,7 @@ RL:
   DDPPO:
     sync_frac: 0.6
     # The PyTorch distributed backend to use
-    distrib_backend: GLOO
+    distrib_backend: NCCL
     # Visual encoder backbone
     pretrained_weights: data/ddppo-models/gibson-2plus-resnet50.pth
     # Initialize with pretrained weights
