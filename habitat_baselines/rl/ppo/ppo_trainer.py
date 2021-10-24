@@ -15,13 +15,9 @@ import numpy as np
 import torch
 import tqdm
 from gym import spaces
+from torch import multiprocessing as mp
 from torch import nn
 from torch.optim.lr_scheduler import LambdaLR
-
-from torch import multiprocessing as mp
-from habitat.utils.pickle5_multiprocessing import ConnectionWrapper
-from habitat.core.vector_env import _WriteWrapper, _ReadWrapper
-from typing import cast
 
 from habitat import Config, VectorEnv, logger
 from habitat.utils import profiling_wrapper
@@ -324,11 +320,8 @@ class PPOTrainer(BaseRLTrainer):
 
     @staticmethod
     def _val_worker(
-        connection_read_fn,
-        connection_write_fn,
+        checkpoint_queue,
         eval_config,
-        child_pipe = None,
-        parent_pipe = None,
     ):
         eval_config.defrost()
         eval_config.NUM_ENVIRONMENTS = eval_config.EVAL.NUM_ENVIRONMENTS
@@ -338,46 +331,24 @@ class PPOTrainer(BaseRLTrainer):
         eval_trainer.device = torch.device(eval_config.EVAL.DEVICE)
         eval_trainer._is_distributed = False
 
-        if parent_pipe is not None:
-            parent_pipe.close()
-        try:
-            while True:
-                command, data = connection_read_fn()
-                if command == "close":
-                    break
-                eval_trainer._eval_checkpoint(*data)
-                connection_write_fn("Evaluated checkpoint")
-        except KeyboardInterrupt:
-            logger.info("Worker KeyboardInterrupt")
-        finally:
-            if child_pipe is not None:
-                child_pipe.close()
+        for data in iter(checkpoint_queue.get, None):
+            eval_trainer._eval_checkpoint(*data)
 
     def _init_val(self):
         _mp_ctx = mp.get_context('forkserver')
-        parent_conn, worker_conn = (ConnectionWrapper(c) for c in _mp_ctx.Pipe(duplex=True))
-        ps = _mp_ctx.Process(
+        self._val_checkpoint_queue = _mp_ctx.Queue()
+        self._val_ps = _mp_ctx.Process(
             target=self._val_worker,
             args=(
-                worker_conn.recv,
-                worker_conn.send,
+                self._val_checkpoint_queue,
                 self.config.clone(),
-                worker_conn,
-                parent_conn,
             ),
             daemon=False
-        )
-        self._val_worker_ps = cast(mp.Process, ps)
-        ps.start()
-        worker_conn.close()
-        self._val_read_fn = _ReadWrapper(parent_conn.recv, 0)
-        self._val_write_fn = _WriteWrapper(parent_conn.send, self._val_read_fn)
+        ).start()
 
     def _close_val(self):
-        if self._val_read_fn.is_waiting:
-            self._val_read_fn()
-        self._val_write_fn(('close', None))
-        self._val_worker_ps.join()
+        self._val_checkpoint_queue(None)
+        self._val_ps.join()
 
     @rank0_only
     @profiling_wrapper.RangeContext("save_checkpoint")
@@ -915,8 +886,12 @@ class PPOTrainer(BaseRLTrainer):
         writer_args,
         checkpoint_index: int = 0,
     ) -> None:
-        self._val_write_fn(('eval', (checkpoint_path, None, writer_args, checkpoint_index)))
-        _ = self._val_read_fn()
+        self._val_checkpoint_queue.put([
+            checkpoint_path,
+            None,
+            writer_args,
+            checkpoint_index
+        ])
 
     def _eval_checkpoint(
         self,
