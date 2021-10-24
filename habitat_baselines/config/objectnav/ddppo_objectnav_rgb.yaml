@@ -1,26 +1,31 @@
-BASE_TASK_CONFIG_PATH: "configs/tasks/objectnav_mp3d.yaml"
-CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000"]
-ENV_NAME: "NavRLEnv"
-SIMULATOR_GPU_ID: 0
-TORCH_GPU_ID: 0
-VIDEO_OPTION: []
-TENSORBOARD_DIR: "tb"
-VIDEO_DIR: "video_dir"
-TEST_EPISODE_COUNT: -1
-EVAL_CKPT_PATH_DIR: "data/new_checkpoints"
-NUM_ENVIRONMENTS: 4
-CHECKPOINT_FOLDER: "data/new_checkpoints"
+BASE_TASK_CONFIG_PATH: "configs/tasks/objectnav_mp3d_rgb.yaml"
 TRAINER_NAME: "ddppo"
-SENSORS: ["DEPTH_SENSOR", "RGB_SENSOR"]
-NUM_UPDATES: 270000
-LOG_INTERVAL: 10
-NUM_CHECKPOINTS: 100
-# Force PyTorch to be single threaded as
-# this improves performance considerably
+ENV_NAME: "NavRLEnv"
+SENSORS: ["RGB_SENSOR"]
+
+NUM_ENVIRONMENTS: 20
+TOTAL_NUM_STEPS: 2.5e8
+NUM_UPDATES: -1
+CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000"]
 FORCE_TORCH_SINGLE_THREADED: True
 
+LOG_INTERVAL: 10
+LOG_FILE: "~/logs/objectnav-rgb-baseline/train.log"
+VIDEO_OPTION: ["tensorboard"]
+TENSORBOARD_DIR: "~/logs/objectnav-rgb-baseline/tb"
+
+CHECKPOINT_FOLDER: "~/logs/objectnav-rgb-baseline"
+EVAL_CKPT_PATH_DIR: "~/logs/objectnav-rgb-baseline"
+NUM_CHECKPOINTS: 500
+CHECKPOINT_INTERVAL: -1
+EVAL_DURING_TRAIN: True
+TEST_EPISODE_COUNT: -1
 EVAL:
-  SPLIT: "val"
+  USE_CKPT_CONFIG: False
+  DEVICE: 'cpu'
+  NUM_ENVIRONMENTS: 1
+  SPLIT: val_mini
+
 
 RL:
   SUCCESS_REWARD: 2.5
@@ -28,6 +33,8 @@ RL:
 
   POLICY:
     name: "PointNavResNetPolicy"
+    OBS_TRANSFORMS:
+        ENABLED_TRANSFORMS: ("ResizeShortestEdge", "CenterCropper")
 
   PPO:
     # ppo params
@@ -46,7 +53,6 @@ RL:
     use_linear_clip_decay: False
     use_linear_lr_decay: False
     reward_window_size: 50
-
     use_normalized_advantage: False
 
     hidden_size: 512
