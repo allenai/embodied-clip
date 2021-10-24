@@ -1,4 +1,4 @@
-BASE_TASK_CONFIG_PATH: "configs/challenge-2021/challenge_objectnav2021.local.rgbd.yaml"
+BASE_TASK_CONFIG_PATH: "configs/tasks/objectnav_mp3d_rgb.yaml"
 TRAINER_NAME: "ddppo"
 ENV_NAME: "NavRLEnv"
 SENSORS: ["RGB_SENSOR"]
