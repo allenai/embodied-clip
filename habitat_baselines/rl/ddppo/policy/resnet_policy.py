@@ -52,6 +52,7 @@ class PointNavResNetPolicy(Policy):
         backbone: str = "resnet18",
         normalize_visual_inputs: bool = False,
         force_blind_policy: bool = False,
+        device: torch.device = None,
         **kwargs
     ):
         super().__init__(
@@ -65,15 +66,16 @@ class PointNavResNetPolicy(Policy):
                 resnet_baseplanes=resnet_baseplanes,
                 normalize_visual_inputs=normalize_visual_inputs,
                 force_blind_policy=force_blind_policy,
+                device=device
             ),
             action_space.n,
         )
 
     @classmethod
-    def from_config(
+    def config_args(
         cls, config: Config, observation_space: spaces.Dict, action_space
     ):
-        return cls(
+        return dict(
             observation_space=observation_space,
             action_space=action_space,
             hidden_size=config.RL.PPO.hidden_size,
@@ -84,6 +86,20 @@ class PointNavResNetPolicy(Policy):
             force_blind_policy=config.FORCE_BLIND_POLICY,
         )
 
+    @classmethod
+    def from_config(
+        cls, config: Config, observation_space: spaces.Dict, action_space
+    ):
+        return cls(**cls.config_args(config, observation_space, action_space))
+
+    @classmethod
+    def from_config_device(
+        cls, config: Config, observation_space: spaces.Dict, action_space, device: torch.device
+    ):
+        return cls(
+            **cls.config_args(config, observation_space, action_space),
+            device=device
+        )
 
 class ResNetEncoder(nn.Module):
     def __init__(
@@ -189,14 +205,18 @@ class ResNetEncoder(nn.Module):
         return x
 
 class ResNetCLIPEncoder(nn.Module):
-    def __init__(self, observation_space: spaces.Dict):
+    def __init__(
+        self,
+        observation_space: spaces.Dict,
+        device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ):
         super().__init__()
 
         self.rgb = "rgb" in observation_space.spaces
         self.depth = "depth" in observation_space.spaces
 
         if not self.is_blind:
-            model, preprocess = clip.load("RN50")
+            model, preprocess = clip.load("RN50", device=device)
 
             # expected input: C x H x W (np.uint8 in [0-255])
             self.preprocess = T.Compose([
@@ -258,6 +278,7 @@ class PointNavResNetNet(Net):
         resnet_baseplanes,
         normalize_visual_inputs: bool,
         force_blind_policy: bool = False,
+        device: torch.device = None,
     ):
         super().__init__()
 
@@ -336,7 +357,10 @@ class PointNavResNetNet(Net):
             )
 
             if backbone == "resnet50_clip":
-                self.goal_visual_encoder = ResNetCLIPEncoder(goal_observation_space)
+                self.goal_visual_encoder = ResNetCLIPEncoder(
+                    goal_observation_space,
+                    device=device
+                )
                 self.goal_visual_fc = nn.Sequential(
                     nn.Linear(self.goal_visual_encoder.output_shape[0], hidden_size),
                     nn.ReLU(True),
@@ -364,6 +388,7 @@ class PointNavResNetNet(Net):
         if backbone == "resnet50_clip":
                 self.visual_encoder = ResNetCLIPEncoder(
                     observation_space if not force_blind_policy else spaces.Dict({}),
+                    device=device
                 )
                 if not self.visual_encoder.is_blind:
                     self.visual_fc = nn.Sequential(
