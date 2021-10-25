@@ -208,6 +208,7 @@ class ResNetCLIPEncoder(nn.Module):
     def __init__(
         self,
         observation_space: spaces.Dict,
+        attention_pool=True,
         device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ):
         super().__init__()
@@ -231,7 +232,14 @@ class ResNetCLIPEncoder(nn.Module):
             # expected output: C x H x W (np.float32)
 
             self.backbone = model.visual
-            self.output_shape = (1024,)
+            if attention_pool:
+                self.output_shape = (1024,)
+            else:
+                self.backbone.attnpool = nn.Sequential(
+                    nn.AdaptiveAvgPool2d(output_size=(1,1)),
+                    nn.Flatten()
+                )
+                self.output_shape = (2048,)
 
     @property
     def is_blind(self):
@@ -356,9 +364,10 @@ class PointNavResNetNet(Net):
                 {"rgb": observation_space.spaces[ImageGoalSensor.cls_uuid]}
             )
 
-            if backbone == "resnet50_clip":
+            if backbone.startswith("resnet50_clip"):
                 self.goal_visual_encoder = ResNetCLIPEncoder(
                     goal_observation_space,
+                    attention_pool=('avgpool' not in backbone),
                     device=device
                 )
                 self.goal_visual_fc = nn.Sequential(
@@ -385,9 +394,10 @@ class PointNavResNetNet(Net):
 
         self._hidden_size = hidden_size
 
-        if backbone == "resnet50_clip":
+        if backbone.startswith("resnet50_clip"):
                 self.visual_encoder = ResNetCLIPEncoder(
                     observation_space if not force_blind_policy else spaces.Dict({}),
+                    attention_pool=('avgpool' not in backbone),
                     device=device
                 )
                 if not self.visual_encoder.is_blind:
