@@ -208,7 +208,7 @@ class ResNetCLIPEncoder(nn.Module):
     def __init__(
         self,
         observation_space: spaces.Dict,
-        attention_pool=True,
+        pooling='attnpool',
         device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ):
         super().__init__()
@@ -232,14 +232,17 @@ class ResNetCLIPEncoder(nn.Module):
             # expected output: C x H x W (np.float32)
 
             self.backbone = model.visual
-            if attention_pool:
-                self.output_shape = (1024,)
-            else:
+            if pooling == 'none':
+                self.backbone.attnpool = nn.Identity()
+                self.output_shape = (2048, 7, 7)
+            elif pooling == 'avgpool':
                 self.backbone.attnpool = nn.Sequential(
                     nn.AdaptiveAvgPool2d(output_size=(1,1)),
                     nn.Flatten()
                 )
                 self.output_shape = (2048,)
+            else:
+                self.output_shape = (1024,)
 
             for param in self.backbone.parameters():
                 param.requires_grad = False
@@ -374,7 +377,7 @@ class PointNavResNetNet(Net):
             if backbone.startswith("resnet50_clip"):
                 self.goal_visual_encoder = ResNetCLIPEncoder(
                     goal_observation_space,
-                    attention_pool=('avgpool' not in backbone),
+                    pooling=backbone.split('_')[-1],
                     device=device
                 )
                 self.goal_visual_fc = nn.Sequential(
@@ -404,7 +407,7 @@ class PointNavResNetNet(Net):
         if backbone.startswith("resnet50_clip"):
                 self.visual_encoder = ResNetCLIPEncoder(
                     observation_space if not force_blind_policy else spaces.Dict({}),
-                    attention_pool=('avgpool' not in backbone),
+                    pooling='avgpool' if 'avgpool' in backbone else 'attnpool',
                     device=device
                 )
                 if not self.visual_encoder.is_blind:
