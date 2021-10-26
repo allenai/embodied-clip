@@ -241,6 +241,13 @@ class ResNetCLIPEncoder(nn.Module):
                 )
                 self.output_shape = (2048,)
 
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+            for module in self.backbone.modules():
+                if "BatchNorm" in type(module).__name__:
+                    module.momentum = 0.0
+            self.backbone.eval()
+
     @property
     def is_blind(self):
         return self.rgb is False and self.depth is False
