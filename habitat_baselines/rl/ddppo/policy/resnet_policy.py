@@ -199,6 +199,14 @@ class ResNetImageNetEncoder(nn.Module):
             )
             self.backbone = models.resnet50(pretrained=True)
             self.backbone.fc = nn.Identity()
+
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+            for module in self.backbone.modules():
+                if "BatchNorm" in type(module).__name__:
+                    module.momentum = 0.0
+            self.backbone.eval()
+
             self.output_shape = (2048,)
 
     @property
