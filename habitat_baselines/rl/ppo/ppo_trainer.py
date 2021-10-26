@@ -172,6 +172,7 @@ class PPOTrainer(BaseRLTrainer):
             self._static_encoder = True
             for param in self.actor_critic.net.visual_encoder.parameters():
                 param.requires_grad_(False)
+            self.actor_critic.net.visual_encoder.eval()
 
         if self.config.RL.DDPPO.reset_critic:
             nn.init.orthogonal_(self.actor_critic.critic.fc.weight)
