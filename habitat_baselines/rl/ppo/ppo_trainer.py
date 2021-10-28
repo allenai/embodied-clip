@@ -131,9 +131,15 @@ class PPOTrainer(BaseRLTrainer):
         observation_space = apply_obs_transforms_obs_space(
             observation_space, self.obs_transforms
         )
-        self.actor_critic = policy.from_config(
-            self.config, observation_space, self.envs.action_spaces[0]
-        )
+        if hasattr(policy, 'from_config_device'):
+            self.actor_critic = policy.from_config_device(
+                self.config, observation_space, self.envs.action_spaces[0],
+                device=self.device
+            )
+        else:
+            self.actor_critic = policy.from_config(
+                self.config, observation_space, self.envs.action_spaces[0]
+            )
         self.obs_space = observation_space
         self.actor_critic.to(self.device)
 
