@@ -272,19 +272,21 @@ class ObjGoalResNetNet(Net):
         )
         self.obj_categories_embedding = nn.Embedding(self._n_object_categories, class_dims)
 
-        if backbone.startswith("resnet50_clip"):
-            self.visual_encoder = ResNetCLIPEncoder(
-                observation_space,
-                pooling='none',
-                device=device
-            )
-        elif backbone == 'resnet50':
+        if backbone == 'resnet50':
             self.visual_encoder = ResNetEncoder(
                 observation_space,
                 baseplanes=resnet_baseplanes,
                 ngroups=resnet_baseplanes // 2,
                 make_backbone=getattr(resnet, backbone),
                 normalize_visual_inputs=normalize_visual_inputs,
+            )
+        elif backbone == "resnet50_imagenet":
+            self.visual_encoder = ResNetImageNetEncoder(observation_space,)
+        elif backbone.startswith("resnet50_clip"):
+            self.visual_encoder = ResNetCLIPEncoder(
+                observation_space,
+                pooling='none',
+                device=device
             )
         else:
             raise NotImplementedError()
