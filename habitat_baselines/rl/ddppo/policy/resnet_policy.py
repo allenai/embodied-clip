@@ -12,6 +12,10 @@ import torch
 from gym import spaces
 from torch import nn as nn
 from torch.nn import functional as F
+from torchvision import transforms as T
+from torchvision.transforms import functional as TF
+
+import clip
 
 from habitat.config import Config
 from habitat.tasks.nav.nav import (
@@ -48,6 +52,7 @@ class PointNavResNetPolicy(Policy):
         backbone: str = "resnet18",
         normalize_visual_inputs: bool = False,
         force_blind_policy: bool = False,
+        device: torch.device = None,
         **kwargs
     ):
         super().__init__(
@@ -61,15 +66,16 @@ class PointNavResNetPolicy(Policy):
                 resnet_baseplanes=resnet_baseplanes,
                 normalize_visual_inputs=normalize_visual_inputs,
                 force_blind_policy=force_blind_policy,
+                device=device
             ),
             action_space.n,
         )
 
     @classmethod
-    def from_config(
+    def config_args(
         cls, config: Config, observation_space: spaces.Dict, action_space
     ):
-        return cls(
+        return dict(
             observation_space=observation_space,
             action_space=action_space,
             hidden_size=config.RL.PPO.hidden_size,
@@ -80,6 +86,20 @@ class PointNavResNetPolicy(Policy):
             force_blind_policy=config.FORCE_BLIND_POLICY,
         )
 
+    @classmethod
+    def from_config(
+        cls, config: Config, observation_space: spaces.Dict, action_space
+    ):
+        return cls(**cls.config_args(config, observation_space, action_space))
+
+    @classmethod
+    def from_config_device(
+        cls, config: Config, observation_space: spaces.Dict, action_space, device: torch.device
+    ):
+        return cls(
+            **cls.config_args(config, observation_space, action_space),
+            device=device
+        )
 
 class ResNetEncoder(nn.Module):
     def __init__(
@@ -184,6 +204,81 @@ class ResNetEncoder(nn.Module):
         x = self.compression(x)
         return x
 
+class ResNetCLIPEncoder(nn.Module):
+    def __init__(
+        self,
+        observation_space: spaces.Dict,
+        pooling='attnpool',
+        device: torch.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ):
+        super().__init__()
+
+        self.rgb = "rgb" in observation_space.spaces
+        self.depth = "depth" in observation_space.spaces
+
+        if not self.is_blind:
+            model, preprocess = clip.load("RN50", device=device)
+
+            # expected input: C x H x W (np.uint8 in [0-255])
+            self.preprocess = T.Compose([
+                # resize and center crop to 224
+                preprocess.transforms[0],  
+                preprocess.transforms[1],
+                # already tensor, but want float
+                T.ConvertImageDtype(torch.float),
+                # normalize with CLIP mean, std
+                preprocess.transforms[4],
+            ])
+            # expected output: C x H x W (np.float32)
+
+            self.backbone = model.visual
+            if pooling == 'none':
+                self.backbone.attnpool = nn.Identity()
+                self.output_shape = (2048, 7, 7)
+            elif pooling == 'avgpool':
+                self.backbone.attnpool = nn.Sequential(
+                    nn.AdaptiveAvgPool2d(output_size=(1,1)),
+                    nn.Flatten()
+                )
+                self.output_shape = (2048,)
+            else:
+                self.output_shape = (1024,)
+
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+            for module in self.backbone.modules():
+                if "BatchNorm" in type(module).__name__:
+                    module.momentum = 0.0
+            self.backbone.eval()
+
+    @property
+    def is_blind(self):
+        return self.rgb is False and self.depth is False
+
+    def forward(self, observations: Dict[str, torch.Tensor]) -> torch.Tensor:  # type: ignore
+        if self.is_blind:
+            return None
+
+        rgb_x = 0
+        if self.rgb:
+            rgb_observations = observations["rgb"]
+            rgb_observations = rgb_observations.permute(0, 3, 1, 2) # BATCH x CHANNEL x HEIGHT X WIDTH
+            rgb_observations = torch.stack(
+                [self.preprocess(rgb_image) for rgb_image in rgb_observations]
+            )  # [BATCH x CHANNEL x HEIGHT X WIDTH] in torch.float32
+            rgb_x = self.backbone(rgb_observations).float()
+
+        depth_x = 0
+        if self.depth:
+            depth_observations = observations["depth"][..., 0]  # [BATCH x HEIGHT X WIDTH]
+            ddd = torch.stack([depth_observations] * 3, dim=1)  # [BATCH x 3 x HEIGHT X WIDTH]
+            ddd = torch.stack([
+                self.preprocess(TF.convert_image_dtype(depth_map, torch.uint8))
+                for depth_map in ddd
+            ])  # [BATCH x CHANNEL x HEIGHT X WIDTH] in torch.float32
+            depth_x = self.backbone(ddd).float()
+
+        return rgb_x + depth_x
 
 class PointNavResNetNet(Net):
     """Network which passes the input image through CNN and concatenates
@@ -201,11 +296,12 @@ class PointNavResNetNet(Net):
         resnet_baseplanes,
         normalize_visual_inputs: bool,
         force_blind_policy: bool = False,
+        device: torch.device = None,
     ):
         super().__init__()
 
-        self.prev_action_embedding = nn.Embedding(action_space.n + 1, 32)
         self._n_prev_action = 32
+        self.prev_action_embedding = nn.Embedding(action_space.n + 1, self._n_prev_action)
         rnn_input_size = self._n_prev_action
 
         if (
@@ -277,42 +373,68 @@ class PointNavResNetNet(Net):
             goal_observation_space = spaces.Dict(
                 {"rgb": observation_space.spaces[ImageGoalSensor.cls_uuid]}
             )
-            self.goal_visual_encoder = ResNetEncoder(
-                goal_observation_space,
-                baseplanes=resnet_baseplanes,
-                ngroups=resnet_baseplanes // 2,
-                make_backbone=getattr(resnet, backbone),
-                normalize_visual_inputs=normalize_visual_inputs,
-            )
 
-            self.goal_visual_fc = nn.Sequential(
-                nn.Flatten(),
-                nn.Linear(
-                    np.prod(self.goal_visual_encoder.output_shape), hidden_size
-                ),
-                nn.ReLU(True),
-            )
+            if backbone.startswith("resnet50_clip"):
+                self.goal_visual_encoder = ResNetCLIPEncoder(
+                    goal_observation_space,
+                    pooling=backbone.split('_')[-1],
+                    device=device
+                )
+                self.goal_visual_fc = nn.Sequential(
+                    nn.Linear(self.goal_visual_encoder.output_shape[0], hidden_size),
+                    nn.ReLU(True),
+                )
+            elif backbone == "resnet50_clip":
+                self.goal_visual_encoder = ResNetEncoder(
+                    goal_observation_space,
+                    baseplanes=resnet_baseplanes,
+                    ngroups=resnet_baseplanes // 2,
+                    make_backbone=getattr(resnet, backbone),
+                    normalize_visual_inputs=normalize_visual_inputs,
+                )
+                self.goal_visual_fc = nn.Sequential(
+                    nn.Flatten(),
+                    nn.Linear(
+                        np.prod(self.goal_visual_encoder.output_shape), hidden_size
+                    ),
+                    nn.ReLU(True),
+                )
+            else:
+                raise NotImplementedError()
 
             rnn_input_size += hidden_size
 
         self._hidden_size = hidden_size
 
-        self.visual_encoder = ResNetEncoder(
-            observation_space if not force_blind_policy else spaces.Dict({}),
-            baseplanes=resnet_baseplanes,
-            ngroups=resnet_baseplanes // 2,
-            make_backbone=getattr(resnet, backbone),
-            normalize_visual_inputs=normalize_visual_inputs,
-        )
-
-        if not self.visual_encoder.is_blind:
-            self.visual_fc = nn.Sequential(
-                nn.Flatten(),
-                nn.Linear(
-                    np.prod(self.visual_encoder.output_shape), hidden_size
-                ),
-                nn.ReLU(True),
+        if backbone.startswith("resnet50_clip"):
+                self.visual_encoder = ResNetCLIPEncoder(
+                    observation_space if not force_blind_policy else spaces.Dict({}),
+                    pooling='avgpool' if 'avgpool' in backbone else 'attnpool',
+                    device=device
+                )
+                if not self.visual_encoder.is_blind:
+                    self.visual_fc = nn.Sequential(
+                        nn.Linear(self.visual_encoder.output_shape[0], hidden_size),
+                        nn.ReLU(True),
+                    )
+        elif backbone == "resnet50":
+            self.visual_encoder = ResNetEncoder(
+                observation_space if not force_blind_policy else spaces.Dict({}),
+                baseplanes=resnet_baseplanes,
+                ngroups=resnet_baseplanes // 2,
+                make_backbone=getattr(resnet, backbone),
+                normalize_visual_inputs=normalize_visual_inputs,
             )
+            if not self.visual_encoder.is_blind:
+                self.visual_fc = nn.Sequential(
+                    nn.Flatten(),
+                    nn.Linear(
+                        np.prod(self.visual_encoder.output_shape), hidden_size
+                    ),
+                    nn.ReLU(True),
+                )
+        else:
+            raise NotImplementedError()
 
         self.state_encoder = build_rnn_state_encoder(
             (0 if self.is_blind else self._hidden_size) + rnn_input_size,
