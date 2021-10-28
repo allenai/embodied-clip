@@ -300,8 +300,8 @@ class PointNavResNetNet(Net):
     ):
         super().__init__()
 
-        self.prev_action_embedding = nn.Embedding(action_space.n + 1, 32)
         self._n_prev_action = 32
+        self.prev_action_embedding = nn.Embedding(action_space.n + 1, self._n_prev_action)
         rnn_input_size = self._n_prev_action
 
         if (
@@ -384,7 +384,7 @@ class PointNavResNetNet(Net):
                     nn.Linear(self.goal_visual_encoder.output_shape[0], hidden_size),
                     nn.ReLU(True),
                 )
-            else:
+            elif backbone == "resnet50_clip":
                 self.goal_visual_encoder = ResNetEncoder(
                     goal_observation_space,
                     baseplanes=resnet_baseplanes,
@@ -399,6 +399,8 @@ class PointNavResNetNet(Net):
                     ),
                     nn.ReLU(True),
                 )
+            else:
+                raise NotImplementedError()
 
             rnn_input_size += hidden_size
 
@@ -415,7 +417,7 @@ class PointNavResNetNet(Net):
                         nn.Linear(self.visual_encoder.output_shape[0], hidden_size),
                         nn.ReLU(True),
                     )
-        else:
+        elif backbone == "resnet50":
             self.visual_encoder = ResNetEncoder(
                 observation_space if not force_blind_policy else spaces.Dict({}),
                 baseplanes=resnet_baseplanes,
@@ -431,6 +433,8 @@ class PointNavResNetNet(Net):
                     ),
                     nn.ReLU(True),
                 )
+        else:
+            raise NotImplementedError()
 
         self.state_encoder = build_rnn_state_encoder(
             (0 if self.is_blind else self._hidden_size) + rnn_input_size,

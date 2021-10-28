@@ -228,18 +228,12 @@ class ResnetTensorGoalEncoder(nn.Module):
             * self.resnet_tensor_shape[2]
         )
 
-    def adapt_input(self, resnet_input):
-        nstep, nsampler = resnet_input.shape[:2]
-        resnet_input = resnet_input.view(-1, *resnet_input.shape[-3:])
-        return resnet_input, nstep, nsampler
-
     def distribute_target(self, target_emb):
         return target_emb.view(-1, self.class_dims, 1, 1).expand(
             -1, -1, self.resnet_tensor_shape[-2], self.resnet_tensor_shape[-1]
         )
 
     def forward(self, resnet_input, target_emb):
-        resnet_input, nstep, nsampler = self.adapt_input(resnet_input)
         embs = [
             self.resnet_compressor(resnet_input),
             self.distribute_target(target_emb),
@@ -269,7 +263,8 @@ class ObjGoalResNetNet(Net):
         super().__init__()
 
         self._hidden_size = hidden_size
-        self.prev_action_embedding = nn.Embedding(action_space.n + 1, 32)
+        self._n_prev_action = 32
+        self.prev_action_embedding = nn.Embedding(action_space.n + 1, self._n_prev_action)
 
         class_dims = 32
         self._n_object_categories = (
@@ -283,7 +278,7 @@ class ObjGoalResNetNet(Net):
                 pooling='none',
                 device=device
             )
-        else:
+        elif backbone == 'resnet50':
             self.visual_encoder = ResNetEncoder(
                 observation_space,
                 baseplanes=resnet_baseplanes,
@@ -291,13 +286,14 @@ class ObjGoalResNetNet(Net):
                 make_backbone=getattr(resnet, backbone),
                 normalize_visual_inputs=normalize_visual_inputs,
             )
+        else:
+            raise NotImplementedError()
 
         self.goal_encoder = ResnetTensorGoalEncoder(
             resnet_tensor_shape = self.visual_encoder.output_shape,
             class_dims = class_dims,
         )
 
-        self._n_prev_action = 32
         rnn_input_size = self.goal_encoder.output_dims + self._n_prev_action
 
         if EpisodicGPSSensor.cls_uuid in observation_space.spaces:
