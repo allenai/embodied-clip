@@ -1,33 +1,29 @@
-BASE_TASK_CONFIG_PATH: "configs/tasks/objectnav_mp3d_rgb.yaml"
-TRAINER_NAME: "ddppo"
-ENV_NAME: "NavRLEnv"
-SENSORS: ["RGB_SENSOR"]
-
+EVAL_CKPT_PATH_DIR: "~/logs/objectnav-rgb-imagenet_eval/ckpt.70.pth"
+LOG_FILE: "~/logs/objectnav-rgb-imagenet_eval/eval_175M.log"
+SIMULATOR_GPU_ID: 0
+TORCH_GPU_ID: 0
 NUM_ENVIRONMENTS: 11
-TOTAL_NUM_STEPS: 2.5e8
-NUM_UPDATES: -1
-CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000"]
-FORCE_TORCH_SINGLE_THREADED: True
 
-LOG_INTERVAL: 10
-LOG_FILE: "~/logs_full_val/objectnav-rgb-imagenet_/train.log"
-VIDEO_OPTION: ["tensorboard"]
-TENSORBOARD_DIR: "~/logs_full_val/objectnav-rgb-imagenet_/tb"
-
-SIMULATOR_GPU_ID: 3
-TORCH_GPU_ID: 3
-
-CHECKPOINT_FOLDER: "~/logs_full_val/objectnav-rgb-imagenet_"
-EVAL_CKPT_PATH_DIR: "~/logs_full_val/objectnav-rgb-imagenet_"
-NUM_CHECKPOINTS: 500
-CHECKPOINT_INTERVAL: -1
-EVAL_DURING_TRAIN: True
 TEST_EPISODE_COUNT: -1
 EVAL:
   USE_CKPT_CONFIG: False
   DEVICE: 'cuda'
   NUM_ENVIRONMENTS: 11
   SPLIT: val
+
+BASE_TASK_CONFIG_PATH: "configs/tasks/objectnav_mp3d_rgb.yaml"
+TRAINER_NAME: "ddppo"
+ENV_NAME: "NavRLEnv"
+SENSORS: ["RGB_SENSOR"]
+
+LOG_INTERVAL: 10
+VIDEO_OPTION: ["tensorboard"]
+TENSORBOARD_DIR: "~/logs/objectnav-rgb-imagenet_eval/tb"
+
+CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000", "TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.SHUFFLE", "False"]
+FORCE_TORCH_SINGLE_THREADED: True
+
+##
 
 RL:
   SUCCESS_REWARD: 2.5
