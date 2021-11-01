@@ -1,4 +1,4 @@
-BASE_TASK_CONFIG_PATH: "configs/tasks/pointnav_gibson_v2.yaml"
+BASE_TASK_CONFIG_PATH: "configs/tasks/pointnav_gibson_v2_mp3d_rgb.yaml"
 TRAINER_NAME: "ddppo"
 ENV_NAME: "NavRLEnv"
 SENSORS: ["RGB_SENSOR"]
