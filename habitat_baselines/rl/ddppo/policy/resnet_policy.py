@@ -232,7 +232,11 @@ class ResNetCLIPEncoder(nn.Module):
             # expected output: C x H x W (np.float32)
 
             self.backbone = model.visual
-            if pooling == 'none':
+
+            if self.rgb and self.depth:
+                self.backbone.attnpool = nn.Identity()
+                self.output_shape = (2048,)
+            elif pooling == 'none':
                 self.backbone.attnpool = nn.Identity()
                 self.output_shape = (2048, 7, 7)
             elif pooling == 'avgpool':
@@ -259,7 +263,7 @@ class ResNetCLIPEncoder(nn.Module):
         if self.is_blind:
             return None
 
-        rgb_x = 0
+        cnn_input = []
         if self.rgb:
             rgb_observations = observations["rgb"]
             rgb_observations = rgb_observations.permute(0, 3, 1, 2) # BATCH x CHANNEL x HEIGHT X WIDTH
@@ -267,8 +271,8 @@ class ResNetCLIPEncoder(nn.Module):
                 [self.preprocess(rgb_image) for rgb_image in rgb_observations]
             )  # [BATCH x CHANNEL x HEIGHT X WIDTH] in torch.float32
             rgb_x = self.backbone(rgb_observations).float()
+            cnn_input.append(rgb_x)
 
-        depth_x = 0
         if self.depth:
             depth_observations = observations["depth"][..., 0]  # [BATCH x HEIGHT X WIDTH]
             ddd = torch.stack([depth_observations] * 3, dim=1)  # [BATCH x 3 x HEIGHT X WIDTH]
@@ -277,8 +281,15 @@ class ResNetCLIPEncoder(nn.Module):
                 for depth_map in ddd
             ])  # [BATCH x CHANNEL x HEIGHT X WIDTH] in torch.float32
             depth_x = self.backbone(ddd).float()
+            cnn_input.append(depth_x)
 
-        return rgb_x + depth_x
+        if self.rgb and self.depth:
+            x = F.adaptive_avg_pool2d(cnn_input[0] + cnn_input[1], 1)
+            x = x.flatten(1)
+        else:
+            x = torch.cat(cnn_input, dim=1)
+
+        return x
 
 class ResNetImageNetEncoder(nn.Module):
     def __init__(self, observation_space: spaces.Dict):
