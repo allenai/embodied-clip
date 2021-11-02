@@ -4,7 +4,7 @@ ENV_NAME: "NavRLEnv"
 SENSORS: ["DEPTH_SENSOR", "RGB_SENSOR"]
 
 NUM_ENVIRONMENTS: 16
-TOTAL_NUM_STEPS: 2.5e8
+TOTAL_NUM_STEPS: 5e8
 NUM_UPDATES: -1
 CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000"]
 FORCE_TORCH_SINGLE_THREADED: True
@@ -16,13 +16,13 @@ TENSORBOARD_DIR: "~/logs/objectnav-rgbd-clip/tb"
 
 CHECKPOINT_FOLDER: "~/logs/objectnav-rgbd-clip"
 EVAL_CKPT_PATH_DIR: "~/logs/objectnav-rgbd-clip"
-NUM_CHECKPOINTS: 500
+NUM_CHECKPOINTS: 50
 CHECKPOINT_INTERVAL: -1
-EVAL_DURING_TRAIN: True
+EVAL_DURING_TRAIN: False
 TEST_EPISODE_COUNT: -1
 EVAL:
   USE_CKPT_CONFIG: False
-  DEVICE: 'cuda:0'
+  DEVICE: 'cpu'
   NUM_ENVIRONMENTS: 1
   SPLIT: val_mini
 
@@ -71,6 +71,6 @@ RL:
     reset_critic: True
 
     # Model parameters
-    backbone: resnet50_clip
+    backbone: resnet50_clip_avgpool
     rnn_type: LSTM
     num_recurrent_layers: 2
