@@ -74,6 +74,6 @@ RL:
     reset_critic: True
 
     # Model parameters
-    backbone: resnet50_clip_avgpool
+    backbone: resnet50_imagenet
     rnn_type: LSTM
     num_recurrent_layers: 2
