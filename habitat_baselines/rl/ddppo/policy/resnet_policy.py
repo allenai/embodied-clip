@@ -436,22 +436,7 @@ class PointNavResNetNet(Net):
                 {"rgb": observation_space.spaces[ImageGoalSensor.cls_uuid]}
             )
 
-            if backbone == "resnet50":
-                self.goal_visual_encoder = ResNetEncoder(
-                    goal_observation_space,
-                    baseplanes=resnet_baseplanes,
-                    ngroups=resnet_baseplanes // 2,
-                    make_backbone=getattr(resnet, backbone),
-                    normalize_visual_inputs=normalize_visual_inputs,
-                )
-                self.goal_visual_fc = nn.Sequential(
-                    nn.Flatten(),
-                    nn.Linear(
-                        np.prod(self.goal_visual_encoder.output_shape), hidden_size
-                    ),
-                    nn.ReLU(True),
-                )
-            elif backbone == "resnet50_imagenet":
+            if backbone == "resnet50_imagenet":
                 self.goal_visual_encoder = ResNetImageNetEncoder(goal_observation_space)
                 self.goal_visual_fc = nn.Sequential(
                     nn.Linear(self.goal_visual_encoder.output_shape[0], hidden_size),
@@ -468,29 +453,26 @@ class PointNavResNetNet(Net):
                     nn.ReLU(True),
                 )
             else:
-                raise NotImplementedError()
+                self.goal_visual_encoder = ResNetEncoder(
+                    goal_observation_space,
+                    baseplanes=resnet_baseplanes,
+                    ngroups=resnet_baseplanes // 2,
+                    make_backbone=getattr(resnet, backbone),
+                    normalize_visual_inputs=normalize_visual_inputs,
+                )
+                self.goal_visual_fc = nn.Sequential(
+                    nn.Flatten(),
+                    nn.Linear(
+                        np.prod(self.goal_visual_encoder.output_shape), hidden_size
+                    ),
+                    nn.ReLU(True),
+                )
 
             rnn_input_size += hidden_size
 
         self._hidden_size = hidden_size
 
-        if backbone == "resnet50":
-            self.visual_encoder = ResNetEncoder(
-                observation_space if not force_blind_policy else spaces.Dict({}),
-                baseplanes=resnet_baseplanes,
-                ngroups=resnet_baseplanes // 2,
-                make_backbone=getattr(resnet, backbone),
-                normalize_visual_inputs=normalize_visual_inputs,
-            )
-            if not self.visual_encoder.is_blind:
-                self.visual_fc = nn.Sequential(
-                    nn.Flatten(),
-                    nn.Linear(
-                        np.prod(self.visual_encoder.output_shape), hidden_size
-                    ),
-                    nn.ReLU(True),
-                )
-        elif backbone == "resnet50_imagenet":
+        if backbone == "resnet50_imagenet":
             self.visual_encoder = ResNetImageNetEncoder(
                 observation_space if not force_blind_policy else spaces.Dict({}),
             )
@@ -511,7 +493,21 @@ class PointNavResNetNet(Net):
                     nn.ReLU(True),
                 )
         else:
-            raise NotImplementedError()
+            self.visual_encoder = ResNetEncoder(
+                observation_space if not force_blind_policy else spaces.Dict({}),
+                baseplanes=resnet_baseplanes,
+                ngroups=resnet_baseplanes // 2,
+                make_backbone=getattr(resnet, backbone),
+                normalize_visual_inputs=normalize_visual_inputs,
+            )
+            if not self.visual_encoder.is_blind:
+                self.visual_fc = nn.Sequential(
+                    nn.Flatten(),
+                    nn.Linear(
+                        np.prod(self.visual_encoder.output_shape), hidden_size
+                    ),
+                    nn.ReLU(True),
+                )
 
         self.state_encoder = build_rnn_state_encoder(
             (0 if self.is_blind else self._hidden_size) + rnn_input_size,

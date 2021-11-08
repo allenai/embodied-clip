@@ -1,28 +1,19 @@
-BASE_TASK_CONFIG_PATH: "configs/tasks/objectnav_mp3d_rgb.yaml"
+BASE_TASK_CONFIG_PATH: "configs/challenge_pointnav2021.local.rgbd.yaml"
 TRAINER_NAME: "ddppo"
 ENV_NAME: "NavRLEnv"
-SENSORS: ["RGB_SENSOR"]
+SENSORS: ["RGB_SENSOR", "DEPTH_SENSOR"]
+SIMULATOR_GPU_ID: 0
+TORCH_GPU_ID: 0
 
-NUM_ENVIRONMENTS: 20
-TOTAL_NUM_STEPS: 2.5e8
-NUM_UPDATES: -1
-CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000"]
-FORCE_TORCH_SINGLE_THREADED: True
-
-LOG_INTERVAL: 10
-LOG_FILE: "~/logs/objectnav-rgb-clip/train.log"
+LOG_FILE: "habitat-pointnav-challenge/eval.log"
 VIDEO_OPTION: ["tensorboard"]
-TENSORBOARD_DIR: "~/logs/objectnav-rgb-clip/tb"
+TENSORBOARD_DIR: "habitat-pointnav-challenge/tb"
 
-CHECKPOINT_FOLDER: "~/logs/objectnav-rgb-clip"
-EVAL_CKPT_PATH_DIR: "~/logs/objectnav-rgb-clip"
-NUM_CHECKPOINTS: 500
-CHECKPOINT_INTERVAL: -1
-EVAL_DURING_TRAIN: True
-TEST_EPISODE_COUNT: -1
+CHECKPOINT_FOLDER: "habitat-pointnav-challenge"
+EVAL_CKPT_PATH_DIR: "habitat-pointnav-challenge"
 EVAL:
   USE_CKPT_CONFIG: False
-  DEVICE: 'cpu'
+  DEVICE: 'cuda'
   NUM_ENVIRONMENTS: 1
   SPLIT: val_mini
 
@@ -57,20 +48,14 @@ RL:
 
   DDPPO:
     sync_frac: 0.6
-    # The PyTorch distributed backend to use
     distrib_backend: NCCL
-    # Visual encoder backbone
     pretrained_weights: data/ddppo-models/gibson-2plus-resnet50.pth
-    # Initialize with pretrained weights
     pretrained: False
-    # Initialize just the visual encoder backbone with pretrained weights
     pretrained_encoder: False
-    # Whether or not the visual encoder backbone will be trained.
     train_encoder: False
-    # Whether or not to reset the critic linear layer
-    reset_critic: True
+    reset_critic: False
 
     # Model parameters
-    backbone: resnet50_clip_avgpool
+    backbone: resnet50
     rnn_type: LSTM
     num_recurrent_layers: 2
