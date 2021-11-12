@@ -24,27 +24,40 @@ def freeze_model(model):
     model.eval()
     return model
 
-
+## Load ResNet model
 resnet_preprocess = T.Compose([
+    T.Resize(size=224, interpolation=Image.BICUBIC),
+    T.CenterCrop(size=(224, 224)),
     T.ToTensor(),
     T.Normalize(
         mean=[0.485, 0.456, 0.406],
         std=[0.229, 0.224, 0.225]
     )
 ])
+
 resnet_model = models.resnet50(pretrained=True)
-resnet_model.fc = nn.Identity()
+resnet_model = torch.nn.Sequential(*list(resnet_model.children())[:-2])
 resnet_model = freeze_model(resnet_model)
 resnet_model = resnet_model.cuda()
 
-
-clip_model, clip_preprocess = clip.load('RN50', device=torch.device('cuda'))
-clip_model = clip_model.visual
-clip_model.attnpool = nn.Sequential(
+resnet_pool = nn.Sequential(
     nn.AdaptiveAvgPool2d(output_size=(1,1)),
     nn.Flatten()
 )
+
+## Load CLIP model
+clip_model, clip_preprocess = clip.load('RN50', device=torch.device('cuda'))
+
+clip_model = clip_model.visual
 clip_model = freeze_model(clip_model)
+
+clip_pool = clip_model.attnpool
+clip_avgpool = nn.Sequential(
+    nn.AdaptiveAvgPool2d(output_size=(1,1)),
+    nn.Flatten()
+)
+clip_model.attnpool = nn.Identity()
+clip_avgpool = freeze_model(clip_avgpool)
 
 
 def class_mask(semantic_frame, class_color):
@@ -71,17 +84,25 @@ for split in ['train', 'val', 'test']:
 
     features = {}
     for scene in glob(os.path.join(data_dir, split, '*.npy')):
-        print(scene)
-        features[scene] = []
+        scene_name = os.path.splitext(os.path.basename(scene))[0]
+        print(scene_name)
+        features[scene_name] = []
         data = np.load(scene, allow_pickle=True)
         for point in data:
             frame = Image.fromarray(point['frame'])
 
             resnet_input = resnet_preprocess(frame).unsqueeze(0).cuda()
-            resnet_features = resnet_model(resnet_input)[0].cpu()
+            resnet_features = resnet_model(resnet_input)
+            
+            resnet_features_conv = resnet_features[0].cpu()
+            resnet_features_avgpool = resnet_pool(resnet_features)[0].cpu()
 
             clip_input = clip_preprocess(frame).unsqueeze(0).cuda()
-            clip_features = clip_model(clip_input).float()[0].cpu()
+            clip_features = clip_model(clip_input)
+
+            clip_features_conv = clip_features.float()[0].cpu()
+            clip_features_attnpool = clip_pool(clip_features).float()[0].cpu()
+            clip_features_avgpool = clip_avgpool(clip_features.float())[0].cpu()
 
             class_masks = np.array([
                 class_mask(
@@ -97,12 +118,15 @@ for split in ['train', 'val', 'test']:
                 device=torch.device('cpu')
             )
 
-            features[scene].append({
-                'rn50_imagenet' : resnet_features,
-                'clip' : clip_features,
+            features[scene_name].append({
+                'rn50_imagenet_conv' : resnet_features_conv,
+                'rn50_imagenet_avgpool' : resnet_features_avgpool,
+                'clip_conv' : clip_features_conv,
+                'clip_attnpool' : clip_features_attnpool,
+                'clip_avgpool' : clip_features_avgpool,
                 'object_presence' : object_presence,
                 'object_presence_grid' : object_presence_grid,
                 'valid_moves_forward' : point['valid_moves_forward']
             })
 
-    torch.save(features, os.path.join(data_dir, f"{split}.npy"))
+    torch.save(features, os.path.join(data_dir, f"{split}.pt"))
