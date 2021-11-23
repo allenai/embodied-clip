@@ -1,0 +1,12 @@
+[submodule "baselines/habitat"]
+	path = baselines/habitat
+	url = git@github.com:allenai/embodied-clip.git
+	branch = habitat
+[submodule "baselines/robothor-objectnav"]
+	path = baselines/robothor-objectnav
+	url = git@github.com:allenai/embodied-clip.git
+	branch = robothor-objectnav
+[submodule "zero-shot-objectnav"]
+	path = zero-shot-objectnav
+	url = git@github.com:allenai/embodied-clip.git
+	branch = zero-shot-objectnav
