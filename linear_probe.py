@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import torch
 import torch.nn as nn
@@ -12,19 +13,32 @@ from constants import target_objects, max_forward_steps
 
 class THOREmbeddingsDataset(Dataset):
     # embedding_type: 'rn50_imagenet_conv', 'rn50_imagenet_avgpool', 'clip_conv', 'clip_attnpool', 'clip_avgpool'
-    # prediction_type: 'object_presence', 'object_presence_grid', 'valid_moves_forward'
+    # prediction_type: 'object_presence', 'object_presence_grid', 'valid_moves_forward', 'pickupable_objects'
     def __init__(self, data_dir, split, embedding_type, prediction_type):
-        data = torch.load(os.path.join(data_dir, f"{split}.pt"))
+        if prediction_type == 'pickupable_objects':
+            image_features = torch.load(os.path.join(data_dir, f"image_features.pt"))
+            data = pickle.load(open(os.path.join(data_dir, f"{split}.pkl"), 'rb'))
+            self.embeddings = []
+            self.predictions = []
 
-        if prediction_type == 'valid_moves_forward_cls':
-            prediction_type = 'valid_moves_forward'
+            for image, obj, pickupable in data:
+                self.embeddings.append(image_features[image][embedding_type])
+                self.predictions.append((
+                    obj,
+                    torch.tensor(pickupable, dtype=int)
+                ))
+        else:
+            data = torch.load(os.path.join(data_dir, f"{split}.pt"))
 
-        self.embeddings = []
-        self.predictions = []
-        for scene_name, frames in data.items():
-            for frame_features in frames:
-                self.embeddings.append(frame_features[embedding_type])
-                self.predictions.append(frame_features[prediction_type])
+            if prediction_type == 'valid_moves_forward_cls':
+                prediction_type = 'valid_moves_forward'
+
+            self.embeddings = []
+            self.predictions = []
+            for scene_name, frames in data.items():
+                for frame_features in frames:
+                    self.embeddings.append(frame_features[embedding_type])
+                    self.predictions.append(frame_features[prediction_type])
 
     def __getitem__(self, index):
         return self.embeddings[index], self.predictions[index]
@@ -86,7 +100,7 @@ class LinearEncoder(pl.LightningModule):
                 nn.Sigmoid()
             )
 
-        elif prediction_type in ['object_presence', 'valid_moves_forward', 'valid_moves_forward_cls']:
+        elif prediction_type in ['object_presence', 'valid_moves_forward', 'valid_moves_forward_cls', 'pickupable_objects']:
             assert embedding_type in ['rn50_imagenet_avgpool', 'clip_avgpool', 'clip_attnpool']
 
             if embedding_type in ['rn50_imagenet_avgpool', 'clip_avgpool']:
@@ -103,6 +117,9 @@ class LinearEncoder(pl.LightningModule):
             elif prediction_type == 'valid_moves_forward_cls':
                 output_dim = max_forward_steps + 1
                 act_fn = nn.Softmax()
+            elif prediction_type == 'pickupable_objects':
+                output_dim = 110
+                act_fn = nn.Sigmoid()
 
             self.model = nn.Sequential(
                 nn.Linear(input_dim, output_dim),
@@ -124,35 +141,38 @@ class LinearEncoder(pl.LightningModule):
         elif self.hparams.prediction_type == 'valid_moves_forward_cls':
             y[y > max_forward_steps] = max_forward_steps
             y = F.one_hot(y, num_classes=(max_forward_steps+1))
+        elif self.hparams.prediction_type == 'pickupable_objects':
+            obj_idx, pickupable = y
+            obj_idx = obj_idx.tolist()
 
         y_pred = self.forward(x)
 
         if self.hparams.prediction_type == 'object_presence_grid':
             y_pred = y_pred.permute(0, 2, 1).flatten(start_dim=1)
+        elif self.hparams.prediction_type == 'pickupable_objects':
+            y_pred = y_pred[range(len(obj_idx)), obj_idx]
 
         # compute loss
         if self.hparams.prediction_type in ['object_presence', 'object_presence_grid', 'valid_moves_forward_cls']:
             loss = F.cross_entropy(y_pred, y.float())
         elif self.hparams.prediction_type == 'valid_moves_forward':
             loss = F.mse_loss(y_pred, y.float())
+        elif self.hparams.prediction_type == 'pickupable_objects':
+            loss = F.binary_cross_entropy(y_pred, pickupable.float())
 
         if eval is False:
             return loss
 
         # compute metrics
-        metrics = []
+        metrics = {}
         if self.hparams.prediction_type in ['object_presence', 'object_presence_grid']:
-            metrics.append(('f1',
-                MF.f1(y_pred, y)
-            ))
+            metrics['accuracy'] = MF.f1(y_pred, y)
         elif self.hparams.prediction_type == 'valid_moves_forward':
-            metrics.append(('mean_abs_err',
-                MF.mean_absolute_error(y_pred, y)
-            ))
+            metrics['accuracy'] = MF.mean_absolute_error(y_pred, y)
         elif self.hparams.prediction_type == 'valid_moves_forward_cls':
-            metrics.append(('accuracy',
-                torch.mean(((y_pred > 0.5) == y)[y == 1].float())
-            ))
+            metrics['accuracy'] = torch.mean(((y_pred > 0.5) == y)[y == 1].float())
+        elif self.hparams.prediction_type == 'pickupable_objects':
+            metrics['accuracy'] = ((y_pred > 0.5) == pickupable).float().mean()
 
         return loss, metrics
 
@@ -164,15 +184,13 @@ class LinearEncoder(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         loss, metrics = self.compute_loss(batch, eval=True)
         self.log("val_loss", loss)
-        for metric, value in metrics:
-            self.log("val_acc", value)
+        self.log("val_acc", metrics['accuracy'])
         return loss
 
     def test_step(self, batch, batch_idx):
         loss, metrics = self.compute_loss(batch, eval=True)
         self.log("test_loss", loss)
-        for metric, value in metrics:
-            self.log("test_acc", value)
+        self.log("test_acc", metrics['accuracy'])
         return loss
 
     def configure_optimizers(self):
@@ -185,8 +203,11 @@ if __name__ == '__main__':
 
     gpus = 1
 
+    # embedding_type: 'rn50_imagenet_conv', 'rn50_imagenet_avgpool', 'clip_conv', 'clip_attnpool', 'clip_avgpool'
+    # prediction_type: 'object_presence', 'object_presence_grid', 'valid_moves_forward', 'pickupable_objects'
     embedding_type = 'clip_avgpool'
-    prediction_type = 'valid_moves_forward_cls'
+    prediction_type, data_path = 'object_presence', os.path.expanduser('~/nfs/clip-embodied-ai/datasets/ithor_scenes')
+    # prediction_type, data_path = 'pickupable_objects', os.path.expanduser('~/nfs/clip-embodied-ai/datasets/pickupable_objects')
     batch_size = 128
     lr = 0.001
 
@@ -197,7 +218,7 @@ if __name__ == '__main__':
     logger = pl.loggers.TensorBoardLogger(root_dir, name=experiment_name, version=experiment_version)
 
     dm = THOREmbeddingsDataModule(
-        os.path.expanduser('~/nfs/clip-embodied-ai/datasets/ithor_scenes'),
+        data_path,
         embedding_type, prediction_type,
         batch_size=batch_size, num_workers=16
     )
@@ -210,8 +231,6 @@ if __name__ == '__main__':
         gpus=gpus,
         val_check_interval=0.5,
         max_epochs=250,
-        # auto_scale_batch_size="power",
-        # auto_lr_find=True,
         callbacks=[
             pl.callbacks.ModelCheckpoint(
                 monitor="val_loss",
@@ -220,9 +239,6 @@ if __name__ == '__main__':
             )
         ],
     )
-
-    # trainer.tune(model, datamodule=dm)
-    # dm.hparams.batch_size = model.hparams.batch_size
 
     trainer.fit(model, dm)
     trainer.test(
