@@ -1,89 +1,13 @@
 import os
-import pickle
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
 import pytorch_lightning as pl
 import torchmetrics.functional as MF
 
 from constants import target_objects, max_forward_steps
-
-
-class THOREmbeddingsDataset(Dataset):
-    # embedding_type: 'rn50_imagenet_conv', 'rn50_imagenet_avgpool', 'clip_conv', 'clip_attnpool', 'clip_avgpool'
-    # prediction_type: 'object_presence', 'object_presence_grid', 'valid_moves_forward', 'pickupable_objects'
-    def __init__(self, data_dir, split, embedding_type, prediction_type):
-        if prediction_type == 'pickupable_objects':
-            image_features = torch.load(os.path.join(data_dir, f"image_features.pt"))
-            data = pickle.load(open(os.path.join(data_dir, f"{split}.pkl"), 'rb'))
-            self.embeddings = []
-            self.predictions = []
-
-            for image, obj, pickupable in data:
-                self.embeddings.append(image_features[image][embedding_type])
-                self.predictions.append((
-                    obj,
-                    torch.tensor(pickupable, dtype=int)
-                ))
-        else:
-            data = torch.load(os.path.join(data_dir, f"{split}.pt"))
-
-            if prediction_type == 'valid_moves_forward_cls':
-                prediction_type = 'valid_moves_forward'
-
-            self.embeddings = []
-            self.predictions = []
-            for scene_name, frames in data.items():
-                for frame_features in frames:
-                    self.embeddings.append(frame_features[embedding_type])
-                    self.predictions.append(frame_features[prediction_type])
-
-    def __getitem__(self, index):
-        return self.embeddings[index], self.predictions[index]
-
-    def __len__(self):
-        return len(self.embeddings)
-
-
-class THOREmbeddingsDataModule(pl.LightningDataModule):
-
-    def __init__(self, data_dir, embedding_type, prediction_type, batch_size=1, num_workers=0):
-        super().__init__()
-        self.save_hyperparameters()
-
-    def setup(self, stage=None):
-        self.train_dataset = THOREmbeddingsDataset(
-            self.hparams.data_dir, 'train',
-            self.hparams.embedding_type, self.hparams.prediction_type
-        )
-        self.val_dataset = THOREmbeddingsDataset(
-            self.hparams.data_dir, 'val',
-            self.hparams.embedding_type, self.hparams.prediction_type
-        )
-        self.test_dataset = THOREmbeddingsDataset(
-            self.hparams.data_dir, 'test',
-            self.hparams.embedding_type, self.hparams.prediction_type
-        )
-
-    def train_dataloader(self):
-        return DataLoader(
-            self.train_dataset, batch_size=self.hparams.batch_size, shuffle=True,
-            num_workers=int(0.8 * self.hparams.num_workers)
-        )
-
-    def val_dataloader(self):
-        return DataLoader(
-            self.val_dataset, batch_size=self.hparams.batch_size, shuffle=False,
-            num_workers=int(0.2 * self.hparams.num_workers)
-        )
-
-    def test_dataloader(self):
-        return DataLoader(
-            self.test_dataset, batch_size=self.hparams.batch_size, shuffle=False,
-            num_workers=int(self.hparams.num_workers)
-        )
+from data import THOREmbeddingsDataModule
 
 
 class LinearEncoder(pl.LightningModule):
@@ -207,7 +131,6 @@ if __name__ == '__main__':
     # prediction_type: 'object_presence', 'object_presence_grid', 'valid_moves_forward', 'pickupable_objects'
     embedding_type = 'clip_avgpool'
     prediction_type, data_path = 'object_presence', os.path.expanduser('~/nfs/clip-embodied-ai/datasets/ithor_scenes')
-    # prediction_type, data_path = 'pickupable_objects', os.path.expanduser('~/nfs/clip-embodied-ai/datasets/pickupable_objects')
     batch_size = 128
     lr = 0.001
 
