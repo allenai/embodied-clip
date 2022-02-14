@@ -220,10 +220,10 @@ be used for evaluation.
 
 | Split        | # Total Episodes | # Episodes for Eval | Path |
 | ------------ |:----------------:|---------------------|-----|
-| train        |       4000       | 1200                | `data/train.pkl.gz`|
+| train        |       4000       | 800                 | `data/train.pkl.gz`|
 | val          |       1000       | 1000                | `data/val.pkl.gz` | 
 | test         |       1000       | 1000                | `data/test.pkl.gz` |
-| combined     |       3000       | 3200                | `data/combined.pkl.gz` |
+| combined     |       2800       | 2800                | `data/combined.pkl.gz` |
   
 ## 🛤️ Submitting to the Leaderboard
 
