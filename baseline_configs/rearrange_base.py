@@ -3,6 +3,7 @@ import platform
 from abc import abstractmethod
 from typing import Optional, List, Sequence, Dict, Any
 
+import ai2thor.platform
 import gym.spaces
 import stringcase
 import torch
@@ -250,20 +251,31 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
             else torch.device("cpu")
         )
         x_display: Optional[str] = None
+        gpu_device: Optional[int] = None
+        thor_platform: Optional[ai2thor.platform.BaseLinuxPlatform] = None
         if platform.system() == "Linux":
-            x_displays = get_open_x_displays(throw_error_if_empty=True)
+            try:
+                raise IOError
+                x_displays = get_open_x_displays(throw_error_if_empty=True)
 
-            if devices is not None and len(
-                [d for d in devices if d != torch.device("cpu")]
-            ) > len(x_displays):
-                get_logger().warning(
-                    f"More GPU devices found than X-displays (devices: `{x_displays}`, x_displays: `{x_displays}`)."
-                    f" This is not necessarily a bad thing but may mean that you're not using GPU memory as"
-                    f" efficiently as possible. Consider following the instructions here:"
-                    f" https://allenact.org/installation/installation-framework/#installation-of-ithor-ithor-plugin"
-                    f" describing how to start an X-display on every GPU."
-                )
-            x_display = x_displays[process_ind % len(x_displays)]
+                if devices is not None and len(
+                    [d for d in devices if d != torch.device("cpu")]
+                ) > len(x_displays):
+                    get_logger().warning(
+                        f"More GPU devices found than X-displays (devices: `{x_displays}`, x_displays: `{x_displays}`)."
+                        f" This is not necessarily a bad thing but may mean that you're not using GPU memory as"
+                        f" efficiently as possible. Consider following the instructions here:"
+                        f" https://allenact.org/installation/installation-framework/#installation-of-ithor-ithor-plugin"
+                        f" describing how to start an X-display on every GPU."
+                    )
+                x_display = x_displays[process_ind % len(x_displays)]
+            except IOError:
+                # Could not find an open `x_display`, use CloudRendering instead.
+                assert all(
+                    [d != torch.device("cpu") and d >= 0 for d in devices]
+                ), "Cannot use CPU devices when there are no open x-displays as CloudRendering requires specifying a GPU."
+                gpu_device = device
+                thor_platform = ai2thor.platform.CloudRendering
 
         kwargs = {
             "stage": stage,
@@ -271,6 +283,10 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
             "scene_to_allowed_rearrange_inds": scene_to_allowed_rearrange_inds,
             "seed": seed,
             "x_display": x_display,
+            "thor_controller_kwargs": {
+                "gpu_device": gpu_device,
+                "platform": thor_platform,
+            },
         }
 
         sensors = kwargs.get("sensors", copy.deepcopy(cls.SENSORS))

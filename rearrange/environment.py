@@ -260,7 +260,7 @@ class RearrangeTHOREnvironment:
         controller = ai2thor.controller.Controller(
             **{
                 "scene": "FloorPlan17_physics",
-                "server_class": ai2thor.fifo_server.FifoServer,
+                # "server_class": ai2thor.fifo_server.FifoServer,
                 # "server_class": ai2thor.wsgi_server.WsgiServer,  # Possibly useful in debugging
                 **self._controller_kwargs,
             },
