@@ -204,11 +204,14 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
         process_ind: int,
         total_processes: int,
         allowed_rearrange_inds_subset: Optional[Sequence[int]] = None,
+        allowed_scenes: Sequence[str] = None,
         devices: Optional[List[int]] = None,
         seeds: Optional[List[int]] = None,
         deterministic_cudnn: bool = False,
     ):
-        if stage == "combined":
+        if allowed_scenes is not None:
+            scenes = allowed_scenes
+        elif stage == "combined":
             # Split scenes more evenly as the train scenes will have more episodes
             train_scenes = datagen_utils.get_scenes("train")
             other_scenes = datagen_utils.get_scenes("val") + datagen_utils.get_scenes(

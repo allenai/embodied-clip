@@ -1,6 +1,5 @@
 import json
 import os
-import pickle
 from collections import defaultdict
 
 import compress_pickle
@@ -8,8 +7,8 @@ import compress_pickle
 from rearrange.constants import STARTER_DATA_DIR
 
 
-def combine():
-    stages = ("train", "train_unseen", "val", "test")
+def combine(task_limit_for_train: int = 10000):
+    stages = ("train", "val", "test")
 
     all_data = defaultdict(lambda: [])
     for stage in stages:
@@ -20,7 +19,7 @@ def combine():
             raise RuntimeError(f"No data at path {data_path}")
 
         data = compress_pickle.load(path=data_path)
-        max_per_scene = 15 if "train" in stage else 10000
+        max_per_scene = task_limit_for_train if "train" in stage else 10000
         count = 0
         for scene in data:
             for ind, task_spec_dict in enumerate(data[scene][:max_per_scene]):
@@ -40,7 +39,7 @@ def combine():
     compress_pickle.dump(
         obj=all_data,
         path=os.path.join(STARTER_DATA_DIR, f"combined.pkl.gz"),
-        protocol=pickle.HIGHEST_PROTOCOL,
+        pickler_kwargs={"protocol": 4,},  # Backwards compatible with python 3.6
     )
 
 

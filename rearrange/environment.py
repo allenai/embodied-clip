@@ -40,6 +40,7 @@ from rearrange.utils import (
     get_pose_info,
     iou_box_3d,
 )
+from rearrange_constants import IOU_THRESHOLD, OPENNESS_THRESHOLD, POSITION_DIFF_BARRIER
 
 
 class RearrangeMode(enum.Enum):
@@ -850,7 +851,7 @@ class RearrangeTHOREnvironment:
             )
             for possible_receptacle in possible_receptacles:
                 self.controller.step(
-                    action="PlaceHeldObject",
+                    action="PutObject",
                     objectId=possible_receptacle["objectId"],
                     **self.physics_step_kwargs,
                 )
@@ -858,9 +859,11 @@ class RearrangeTHOREnvironment:
                     break
 
             # We failed to place the object into a receptacle, let's just drop it.
-            if not self.controller.last_event.metadata["lastActionSuccess"]:
+            if len(possible_receptacles) == 0 or (
+                not self.controller.last_event.metadata["lastActionSuccess"]
+            ):
                 self.controller.step(
-                    "DropHandObjectAhead",
+                    "DropHeldObjectAhead",
                     forceAction=True,
                     autoSimulation=False,
                     randomMagnitude=0.0,
@@ -966,9 +969,9 @@ class RearrangeTHOREnvironment:
         cls,
         goal_pose: Union[Dict[str, Any], Sequence[Dict[str, Any]]],
         cur_pose: Union[Dict[str, Any], Sequence[Dict[str, Any]]],
-        min_iou: float = 0.5,
-        open_tol: float = 0.2,
-        pos_barrier: float = 2.0,
+        min_iou: float = IOU_THRESHOLD,
+        open_tol: float = OPENNESS_THRESHOLD,
+        pos_barrier: float = POSITION_DIFF_BARRIER,
     ) -> Union[float, np.ndarray]:
         """Computes the energy between two poses.
 
@@ -1359,9 +1362,10 @@ class RearrangeTHOREnvironment:
             self.controller.step(
                 "SetObjectPoses",
                 objectPoses=self.current_task_spec.target_poses,
-                forceKinematic=False,
+                placeStationary=False,
                 enablePhysicsJitter=True,
                 forceRigidbodySleep=True,
+                skipMoveable=True,
             )
             assert self.controller.last_event.metadata["lastActionSuccess"]
 
@@ -1515,9 +1519,10 @@ class RearrangeTHOREnvironment:
         self.controller.step(
             "SetObjectPoses",
             objectPoses=task_spec.starting_poses,
-            forceKinematic=False,
+            placeStationary=False,
             enablePhysicsJitter=True,
             forceRigidbodySleep=True,
+            skipMoveable=True,
         )
         assert self.controller.last_event.metadata["lastActionSuccess"]
 

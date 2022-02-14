@@ -1,5 +1,5 @@
 <h1 align="left">
-    AI2-THOR Rearrangement Challenge
+    2022 AI2-THOR Rearrangement Challenge
 </h1>
 
 <p align="left">
@@ -29,8 +29,8 @@
 
 <img src="https://ai2thor.allenai.org/static/4844ccdba50de95a4feff30cf2978ce5/3ba25/rearrangement-cover1.png" />
 
-Welcome to the 2021 AI2-THOR Rearrangement Challenge hosted at the
-[CVPR'21 Embodied-AI Workshop](https://embodied-ai.org/).
+Welcome to the 2022 AI2-THOR Rearrangement Challenge hosted at the
+[CVPR'22 Embodied-AI Workshop](https://embodied-ai.org/).
 The goal of this challenge is to build a model/agent that move objects in a room
 to restore them to a given initial configuration. Please follow the instructions below
 to get started.
@@ -50,6 +50,7 @@ with open("README.md", "r") as f:
 -->
 <div class="toc">
 <ul>
+<li><a href="#-whats-new-in-the-2022-challenge">🔥🆕🔥 What's New in the 2022 Challenge?</a></li>
 <li><a href="#-installation">💻 Installation</a></li>
 <li><a href="#-rearrangement-task-description">📝 Rearrangement Task Description</a></li>
 <li><a href="#-challenge-tracks-and-datasets">🛤️ Challenge Tracks and Datasets</a><ul>
@@ -84,6 +85,19 @@ with open("README.md", "r") as f:
 <li><a href="#-citation">📄 Citation</a></li>
 </ul>
 </div>
+
+## 🔥🆕🔥 What's New in the 2022 Challenge?
+
+Our 2022 AI2-THOR Rearrangement Challenge has several upgrades distinguishing it from the 2021 version:
+1. **New AI2-THOR version.** We've upgraded the version of AI2-THOR we're using from 2.1.0 to 4.1.0, this brings:
+    * Performance improvements
+    * The ability to use (the recently announced) headless rendering feature, see 
+      [here](https://ai2thor.allenai.org/ithor/documentation/#headless-setup) this makes it much easier to run
+      AI2-THOR on shared servers where you may not have the admin privileges to start an X-server.
+2. **New dataset.** We've released a new rearrangement dataset to match the new AI2-THOR version. This new dataset
+    has a more uniform balance of easy/hard episodes.
+3. **Misc. improvements.** We've fixed a number of minor bugs and performance issues from the 2021 challenge improving
+   consistency.
 
 ## 💻 Installation
 
@@ -157,12 +171,10 @@ a local `./src` directory. By explicitly specifying the `PIP_SRC` variable we ca
 
 **Python 3.6+ 🐍.** Each of the actions supports `typing` within <span class="chillMono">Python</span>.
 
-**AI2-THOR 2.7.2 🧞.** To ensure reproducible results, we're restricting all users to use the exact same version of <span class="chillMono">AI2-THOR</span>.
+**AI2-THOR 4.1.0 🧞.** To ensure reproducible results, we're restricting all users to use the exact same version of <span class="chillMono">AI2-THOR</span>.
 
 **AllenAct 🏋💪.** We ues the <span class="chillMono">AllenAct</span> reinforcement learning framework 
     for generating baseline models, baseline training pipelines, and for several of their helpful abstractions/utilities.
-
-**SciPy 🧑‍🔬.** We utilize <span class="chillMono">SciPy</span> for evaluation. It helps calculate the IoU between 3D bounding boxes.
 
 ## 📝 Rearrangement Task Description
 
@@ -192,34 +204,35 @@ For this 2021 challenge we have two distinct tracks:
   
 ### 📊 Datasets
 
-For this challenge we have four distinct dataset splits: `"train"`, `"train_unseen"`, `"val"`, and `"test"`.
-The `train` and `train_unseen` splits use floor plans 1-20, 200-220, 300-320, and 400-420 within AI2-THOR,
+For this challenge we have three dataset splits: `"train"`, `"val"`, and `"test"`.
+The `train` split uses floor plans 1-20, 200-220, 300-320, and 400-420 within AI2-THOR,
 the `"val"` split uses floor plans 21-25, 221-225, 321-325, and 421-425, and finally the `"test"` split uses
 scenes 26-30, 226-230, 326-330, and 426-430. These dataset splits are stored as the compressed [pickle](https://docs.python.org/3/library/pickle.html)-serialized files
 `data/*.pkl.gz`. While you are freely (and encouraged) to enhance the training set as you see fit, you should
 never train your agent within any of the test scenes.
 
 For evaluation, your model will need to be evaluated on each of the above splits and the results
-submitted to our leaderboard link (see section below). As the `"train"` and `"train_unseen"` sets
+submitted to our leaderboard link (see section below). As the `"train"` set is
 are quite large, we do not expect you to evaluate on their entirety. Instead we select ~1000 datapoints
 from each of these sets for use in evaluation. For convenience, we provide the `data/combined.pkl.gz`
-file which contains the `"train"`, `"train_unseen"`, `"val"`, and `"test"` datapoints that should
+file which contains the `"train"`, `"val"`, and `"test"` datapoints that should
 be used for evaluation.
 
 | Split        | # Total Episodes | # Episodes for Eval | Path |
-| ------------ |:-----:|-----|-----|
-| train        | 4000 | 1200 | `data/train.pkl.gz`|
-| train_unseen | 3800 | 1140 | `data/train_unseen.pkl.gz`|
-| val          | 1000 | 1000 | `data/val.pkl.gz` | 
-| test         | 1000 | 1000 | `data/test.pkl.gz` |
-| combined     | 4340 | 4340 | `data/combined.pkl.gz` |
+| ------------ |:----------------:|---------------------|-----|
+| train        |       4000       | 1200                | `data/train.pkl.gz`|
+| val          |       1000       | 1000                | `data/val.pkl.gz` | 
+| test         |       1000       | 1000                | `data/test.pkl.gz` |
+| combined     |       3000       | 3200                | `data/combined.pkl.gz` |
   
 ## 🛤️ Submitting to the Leaderboard
 
 We are tracking challenge participant entries using the [AI2 Leaderboard](https://leaderboard.allenai.org/). The team with the best submission made to either of the below leaderboards by May 31st (midnight, [anywhere on earth](https://time.is/Anywhere_on_Earth)) will be announced at the [CVPR'21 Embodied-AI Workshop](https://embodied-ai.org/) and invited to produce a video describing their approach.
 
-Submissions can be made to the 1-phase leaderboard [here](https://leaderboard.allenai.org/ithor_rearrangement_1phase)
-and submissions to the 2-phase leaderboard can be made [here](https://leaderboard.allenai.org/ithor_rearrangement_2phase).
+**Submission leaderboard links will be announced soon (late Feb 2022). Please check back here.** Our 2021
+leaderboard links can be found [here](https://leaderboard.allenai.org/ithor_rearrangement_1phase) and [here](https://leaderboard.allenai.org/ithor_rearrangement_2phase). Note
+that our 2021 challenge uses a different dataset and older version of AI2-THOR and so results will not be 
+directly comparable.
 
 Submissions should include your agent's trajectories for all tasks contained within the [combined.pkl.gz](data/combined.pkl.gz)
 dataset, this "combined" dataset includes tasks for the train, train_unseen, validation, and test sets. For an example
@@ -521,15 +534,15 @@ allenact -o rearrange_out -b . baseline_configs/two_phase/two_phase_rgb_resnet_p
 We currently provide the following pretrained models (see [our paper](https://arxiv.org/abs/2103.16544) for details
 on these models):
 
-| Model | % Fixed Strict (Test) | Pretrained Model |
-|------------|:----------:|:----------:|
-| [1-Phase ResNet18+ANM IL](baseline_configs/one_phase/one_phase_rgb_resnet_frozen_map_dagger.py) | 8.9% | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetFrozenMapDagger_40proc__stage_00__steps_000040060240.pt) |
-| [1-Phase ResNet18 IL](baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py) | 6.3% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetDagger_40proc__stage_00__steps_000050058550.pt) |
-| [1-Phase ResNet18 PPO](baseline_configs/one_phase/one_phase_rgb_resnet_ppo.py) | 5.3%| [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetPPO__stage_00__steps_000060068000.pt) |
-| [1-Phase Simple IL](baseline_configs/one_phase/one_phase_rgb_dagger.py) | 4.8% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBDagger_40proc__stage_00__steps_000065070800.pt) |
-| [1-Phase Simple PPO](baseline_configs/one_phase/one_phase_rgb_ppo.py) | 4.6% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBPPO__stage_00__steps_000010010730.pt) |
-| [2-Phase ResNet18+ANM IL+PPO](baseline_configs/two_phase_rgb_resnet_frozen_map_ppowalkthrough_ilunshuffle.py) | 1.44% | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetFrozenMapPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000075000985.pt) |
-| [2-Phase ResNet18 IL+PPO](baseline_configs/two_phase/two_phase_rgb_resnet_ppowalkthrough_ilunshuffle.py) | 0.66% | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000020028800.pt) |
+| Model | % Fixed Strict (Test, on 2021 dataset) | Pretrained Model |
+|------------|:--------------------------------------:|:----------:|
+| [1-Phase ResNet18+ANM IL](baseline_configs/one_phase/one_phase_rgb_resnet_frozen_map_dagger.py) |                  8.9%                  | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetFrozenMapDagger_40proc__stage_00__steps_000040060240.pt) |
+| [1-Phase ResNet18 IL](baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py) |                  6.3%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetDagger_40proc__stage_00__steps_000050058550.pt) |
+| [1-Phase ResNet18 PPO](baseline_configs/one_phase/one_phase_rgb_resnet_ppo.py) |                  5.3%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetPPO__stage_00__steps_000060068000.pt) |
+| [1-Phase Simple IL](baseline_configs/one_phase/one_phase_rgb_dagger.py) |                  4.8%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBDagger_40proc__stage_00__steps_000065070800.pt) |
+| [1-Phase Simple PPO](baseline_configs/one_phase/one_phase_rgb_ppo.py) |                  4.6%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBPPO__stage_00__steps_000010010730.pt) |
+| [2-Phase ResNet18+ANM IL+PPO](baseline_configs/two_phase_rgb_resnet_frozen_map_ppowalkthrough_ilunshuffle.py) |                 1.44%                  | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetFrozenMapPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000075000985.pt) |
+| [2-Phase ResNet18 IL+PPO](baseline_configs/two_phase/two_phase_rgb_resnet_ppowalkthrough_ilunshuffle.py) |                 0.66%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000020028800.pt) |
 
 These models can be downloaded at from the above links and should be placed into the `pretrained_model_ckpts` directory.
 You can then, for example, run inference for the _1-Phase ResNet18 IL_ model using AllenAct by running:
@@ -541,12 +554,12 @@ allenact baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py \
 --eval
 ```
 this will evaluate this model across all datapoints in the `data/combined.pkl.gz` dataset
-which contains data from the `train`, `train_unseen`, `val`, and `test` sets so that
+which contains data from the `train`, `val`, and `test` sets so that
 evaluation doesn't have to be run on each set separately.
 
 # 📄 Citation
 
-If you use this work, please cite [our paper](https://arxiv.org/abs/2103.16544) (to appear in CVPR'21):
+If you use this work, please cite [our CVPR'21 paper](https://arxiv.org/abs/2103.16544):
 
 ```bibtex
 @InProceedings{RoomR,

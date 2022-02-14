@@ -1,13 +1,11 @@
 import logging
 import random
-from contextlib import contextmanager
 from typing import Dict, Callable, Tuple, Union, List, Any, Optional, Sequence
 
 import ai2thor.controller
 import lru
 import numpy as np
-from scipy.spatial.qhull import ConvexHull, Delaunay
-
+from allenact.utils.system import ImportChecker
 from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from allenact_plugins.ithor_plugin.ithor_util import include_object_data
 
@@ -47,15 +45,17 @@ def save_frames_to_mp4(frames: Sequence[np.ndarray], file_name: str, fps=3):
     ani.save(file_name, writer=writer, dpi=300)
 
 
-def hand_in_initial_position(controller: ai2thor.controller.Controller):
+def hand_in_initial_position(
+    controller: ai2thor.controller.Controller, ignore_rotation: bool = False
+):
     metadata = controller.last_event.metadata
-    return (
-        IThorEnvironment.position_dist(
-            metadata["hand"]["localPosition"], {"x": 0, "y": -0.16, "z": 0.38},
-        )
-        < 1e-4
-        and IThorEnvironment.angle_between_rotations(
-            metadata["hand"]["localRotation"], {"x": 0, "y": 0, "z": 0}
+    return IThorEnvironment.position_dist(
+        metadata["heldObjectPose"]["localPosition"], {"x": 0, "y": -0.16, "z": 0.38},
+    ) < 1e-4 and (
+        ignore_rotation
+        or IThorEnvironment.angle_between_rotations(
+            metadata["heldObjectPose"]["localRotation"],
+            {"x": -metadata["agent"]["cameraHorizon"], "y": 0, "z": 0},
         )
         < 1e-2
     )
@@ -257,6 +257,10 @@ def _iou_slow(
     num_points: int = 2197,
 ) -> float:
     """Calculate the IoU between 3d bounding boxes b1 and b2."""
+
+    with ImportChecker("To use `_iou_slow` you must first install `scipy`."):
+        from scipy.spatial.qhull import ConvexHull, Delaunay
+
     b1 = np.array(b1) if not isinstance(b1, np.ndarray) else b1
     b2 = np.array(b2) if not isinstance(b2, np.ndarray) else b2
 
@@ -317,6 +321,10 @@ def get_basis_for_3d_box(corners: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     magnitudes1 = np.sqrt((without_first * without_first).sum(1))
     v0_ind = np.argmin(magnitudes1)
     v0_mag = magnitudes1[v0_ind]
+
+    if v0_mag < 1e-8:
+        raise RuntimeError(f"Could not find basis for {corners}")
+
     v0 = without_first[np.argmin(magnitudes1)] / v0_mag
 
     orth_to_v0 = (v0.reshape(1, -1) * without_first).sum(-1) < v0_mag / 2.0
@@ -457,7 +465,9 @@ class ObjectInteractablePostionsCache:
             )
             if should_teleport:
                 if object_held:
-                    if not hand_in_initial_position(controller=controller):
+                    if not hand_in_initial_position(
+                        controller=controller, ignore_rotation=True
+                    ):
                         raise NotImplementedError
 
                     if physics_was_unpaused:
@@ -485,7 +495,9 @@ class ObjectInteractablePostionsCache:
 
             if should_teleport:
                 if object_held:
-                    if hand_in_initial_position(controller=controller):
+                    if hand_in_initial_position(
+                        controller=controller, ignore_rotation=True
+                    ):
                         controller.step(
                             "PickupObject",
                             objectId=obj_in_scene["objectId"],
