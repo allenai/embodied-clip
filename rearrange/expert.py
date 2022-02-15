@@ -789,13 +789,20 @@ def __test():
     shortest_path_navigator = ShortestPathNavigatorTHOR(
         controller=task_sampler.unshuffle_env.controller, grid_size=STEP_SIZE
     )
+
     k = 0
+
+    # If you want to restart from a particular k:
+    # task_sampler.reset()
+    # for _ in range(k):
+    #     next(task_sampler.task_spec_iterator)
 
     all_metrics = []
     while task_sampler.length > 0:
         print(k)
         random.seed(k)
         k += 1
+
         task = task_sampler.next_task()
         assert task is not None
 
@@ -822,11 +829,14 @@ def __test():
             )
 
             frames.append(controller.last_event.frame)
-        # if task.metrics()["unshuffle/prop_fixed"] == 1:
-        #     save_frames_to_mp4(frames=frames, file_name=f"rearrange_expert_{k}.mp4")
+        if task.metrics()["unshuffle/prop_fixed"] == 1:
+            print("Greedy expert success")
+            # save_frames_to_mp4(frames=frames, file_name=f"rearrange_expert_{k}.mp4")
+        else:
+            print("Greedy expert failure")
 
         metrics = task.metrics()
-        print(metrics)
+        # print(metrics)
         all_metrics.append(metrics)
 
     print(f"{len(all_metrics)} tasks evaluated with expert.")

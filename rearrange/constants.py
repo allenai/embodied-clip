@@ -4,12 +4,12 @@ from pathlib import Path
 MAX_HAND_METERS = 0.5
 FOV = 90
 
-REQUIRED_THOR_VERSION = "2.7.2"
+REQUIRED_THOR_VERSION = "4.1.0"
 STARTER_DATA_DIR = os.path.join(
-    os.path.abspath(os.path.dirname(Path(__file__))), "../data"
+    os.path.abspath(os.path.dirname(Path(__file__))), "../data", "2022",
 )
 
-THOR_COMMIT_ID = "f46d5ec42b65fdae9d9a48db2b4fb6d25afbd1fe"
+THOR_COMMIT_ID = "eb93d0b6520e567bac8ad630462b5c0c4cea1f5f"
 STEP_SIZE = 0.25
 
 # fmt: off

@@ -2,12 +2,14 @@
 
 import argparse
 import json
+import math
 import multiprocessing as mp
 import os
-import pickle
+import platform
 import queue
 import random
 import time
+import warnings
 from collections import defaultdict
 from typing import List, Set, Dict, Optional, Any, cast
 
@@ -15,9 +17,10 @@ import compress_pickle
 import numpy as np
 import tqdm
 from ai2thor.controller import Controller
-
 from allenact.utils.misc_utils import md5_hash_str_as_int
 from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
+from setproctitle import setproctitle as ptitle
+
 from datagen.datagen_constants import OBJECT_TYPES_TO_NOT_MOVE
 from datagen.datagen_utils import (
     get_scenes,
@@ -26,12 +29,14 @@ from datagen.datagen_utils import (
     open_objs,
     get_object_ids_to_not_move_from_object_types,
     remove_objects_until_all_have_identical_meshes,
+    check_object_opens,
 )
 from rearrange.constants import STARTER_DATA_DIR, THOR_COMMIT_ID
 from rearrange.environment import (
     RearrangeTHOREnvironment,
     RearrangeTaskSpec,
 )
+from rearrange_constants import OPENNESS_THRESHOLD, IOU_THRESHOLD
 
 mp = mp.get_context("spawn")
 
@@ -41,20 +46,23 @@ def generate_one_rearrangement_given_initial_conditions(
     scene: str,
     start_kwargs: dict,
     target_kwargs: dict,
-    obj_rearrangement_count: int,
+    num_objs_to_move: int,
+    num_objs_to_open: int,
     object_types_to_not_move: Set[str],
     agent_pos: Dict[str, float],
     agent_rot: Dict[str, float],
+    allow_putting_objects_away: bool = False,
 ):
-    nonpickupable_open_count = random.randint(0, 1)
-    obj_rearrangement_count -= nonpickupable_open_count
-
     # Start position
+
     controller.reset(scene)
     controller.step(
         "TeleportFull", horizon=0, standing=True, rotation=agent_rot, **agent_pos
     )
     if not controller.last_event.metadata["lastActionSuccess"]:
+        return None, None, None
+
+    if not remove_objects_until_all_have_identical_meshes(controller):
         return None, None, None
 
     controller.step("InitialRandomSpawn", **start_kwargs)
@@ -65,9 +73,6 @@ def generate_one_rearrangement_given_initial_conditions(
         controller.step("Pass")
 
     if any(o["isBroken"] for o in controller.last_event.metadata["objects"]):
-        return None, None, None
-
-    if not remove_objects_until_all_have_identical_meshes(controller):
         return None, None, None
 
     # get initial and post random spawn object data
@@ -81,8 +86,22 @@ def generate_one_rearrangement_given_initial_conditions(
     ]
     random.shuffle(openable_objects)
 
-    objects_to_open = openable_objects[:nonpickupable_open_count]
-    start_openness = open_objs(objects_to_open=objects_to_open, controller=controller)
+    object_names_to_open = []
+    for oo in openable_objects:
+        if len(object_names_to_open) == num_objs_to_open:
+            break
+        if check_object_opens(oo, controller):
+            object_names_to_open.append(oo["name"])
+
+    if len(object_names_to_open) != num_objs_to_open:
+        return None, None, None
+
+    try:
+        start_openness = open_objs(
+            object_names_to_open=object_names_to_open, controller=controller
+        )
+    except (StopIteration, RuntimeError):
+        return None, None, None
 
     # accounts for possibly a rare event that I cannot think of, where opening
     # a non-pickupable object moves a pickupable object.
@@ -92,10 +111,41 @@ def generate_one_rearrangement_given_initial_conditions(
     )
 
     # choose which objects to move
+    if len(pickupable_objects_after_first_irs) < num_objs_to_move:
+        return None, None, None
+
     random.shuffle(pickupable_objects_after_first_irs)
-    objects_to_not_move = pickupable_objects_after_first_irs[:-obj_rearrangement_count]
-    moved_objs = pickupable_objects_after_first_irs[-obj_rearrangement_count:]
-    object_names_not_to_move = {o["name"] for o in objects_to_not_move}
+    if num_objs_to_move == 0:
+        objects_to_not_move = pickupable_objects_after_first_irs
+        moved_objs = []
+    else:
+        objects_to_not_move = pickupable_objects_after_first_irs[:-num_objs_to_move]
+        moved_objs = pickupable_objects_after_first_irs[-num_objs_to_move:]
+
+    moved_obj_names = {o["name"] for o in moved_objs}
+    unmoved_obj_names = {o["name"] for o in objects_to_not_move}
+
+    if allow_putting_objects_away:
+        # If we're having a really hard time shuffling objects successfully, then let's
+        # move some of the objects we don't care about (i.e. the ones whose position won't change)
+        # into cupboards/drawers/etc so that there is more space.
+        controller.step(
+            "InitialRandomSpawn",
+            **start_kwargs,
+            excludedObjectIds=[
+                o["objectId"]
+                for o in controller.last_event.metadata["objects"]
+                if o["name"] in moved_obj_names
+            ],
+        )
+        if not controller.last_event.metadata["lastActionSuccess"]:
+            return None, None, None
+
+        objects_after_first_irs = controller.last_event.metadata["objects"]
+        pickupable_objects_after_first_irs = filter_pickupable(
+            objects=objects_after_first_irs,
+            object_types_to_not_move=object_types_to_not_move,
+        )
 
     controller.step(
         "TeleportFull", horizon=0, standing=True, rotation=agent_rot, **agent_pos
@@ -110,7 +160,7 @@ def generate_one_rearrangement_given_initial_conditions(
         object_ids_not_to_move = [
             o["objectId"]
             for o in controller.last_event.metadata["objects"]
-            if o["name"] in object_names_not_to_move
+            if o["name"] in unmoved_obj_names
         ]
         object_ids_not_to_move.extend(
             get_object_ids_to_not_move_from_object_types(
@@ -131,14 +181,18 @@ def generate_one_rearrangement_given_initial_conditions(
             controller.step("Pass")
 
         # change the openness of one the same non-pickupable objects
-        target_openness = open_objs(objects_to_open, controller)
+        try:
+            target_openness = open_objs(
+                object_names_to_open=object_names_to_open, controller=controller
+            )
+        except (StopIteration, RuntimeError):
+            return None, None, None
 
         # get initial and post random spawn object data
         pickupable_objects_after_shuffle = filter_pickupable(
             controller.last_event.metadata["objects"], object_types_to_not_move
         )
 
-        moved_obj_names = {o["name"] for o in moved_objs}
         all_teleport_success = True
         for o in pickupable_objects_after_shuffle:
             if o["name"] in moved_obj_names:
@@ -170,7 +224,7 @@ def generate_one_rearrangement_given_initial_conditions(
     for o in controller.last_event.metadata["objects"]:
         if o["isBroken"]:
             print(
-                f"In scene {controller.last_event.metadata['objects']},"
+                f"In scene {controller.last_event.metadata['sceneName']},"
                 f" object {o['name']} broke during setup."
             )
             return None, None, None
@@ -260,6 +314,17 @@ def generate_rearrangements_for_scenes(
 
         # set positions and rotations
         controller.reset(scene)
+
+        scene_has_openable = 0 != len(
+            [
+                o
+                for o in controller.last_event.metadata["objects"]
+                if o["openable"] and not o["pickupable"]
+            ]
+        )
+        if not scene_has_openable:
+            warnings.warn(f"SCENE {scene} HAS NO OPENABLE OBJECTS")
+
         evt = controller.step("GetReachablePositions")
         rps: List[Dict[str, float]] = evt.metadata["actionReturn"]
         rps.sort(key=lambda d: (round(d["x"], 2), round(d["z"], 2)))
@@ -267,6 +332,14 @@ def generate_rearrangements_for_scenes(
 
         for reuse_i in range(scene_reuse_count):
             try_count = 0
+
+            # Evenly distribute # of object rearrangements
+            num_objs_to_open = scene_has_openable * (reuse_i % 2)
+            num_objs_to_move = (1 - num_objs_to_open) + math.floor(
+                max_obj_rearrangements_per_scene * (reuse_i / scene_reuse_count)
+            )
+            position_count_offset = 0
+
             while True:
                 try_count += 1
                 if try_count > 100:
@@ -274,9 +347,8 @@ def generate_rearrangements_for_scenes(
                         f"Something wrong with scene {scene}, please file an issue."
                     )
 
-                seed = md5_hash_str_as_int(
-                    f"{stage_seed}|{scene}|{reuse_i}|{try_count}"
-                )
+                episode_seed_string = f"{scene}|ind_{reuse_i}|tries_{try_count}|counts_{position_count_offset}|seed_{stage_seed}"
+                seed = md5_hash_str_as_int(episode_seed_string)
                 random.seed(seed)
 
                 # avoid agent being unable to teleport to position
@@ -284,22 +356,19 @@ def generate_rearrangements_for_scenes(
                 pos = random.choice(rps)
                 rot = {"x": 0, "y": int(random.choice(rotations)), "z": 0}
 
-                # use random number of objects per scene
-                obj_rearrangements = random.choice(
-                    np.arange(1, max_obj_rearrangements_per_scene + 1)
-                )
-
                 # used to make sure the positions of the objects
                 # are not always the same across the same scene.
                 start_kwargs = {
                     "randomSeed": random.randint(0, int(1e7) - 1),
                     "forceVisible": force_visible,
                     "placeStationary": place_stationary,
+                    "excludedReceptacles": ["ToiletPaperHanger"],
                 }
                 target_kwargs = {
                     "randomSeed": random.randint(0, int(1e7) - 1),
                     "forceVisible": force_visible,
                     "placeStationary": place_stationary,
+                    "excludedReceptacles": ["ToiletPaperHanger"],
                 }
 
                 # sometimes weird bugs arise where the pickupable
@@ -309,26 +378,30 @@ def generate_rearrangements_for_scenes(
                     starting_poses,
                     target_poses,
                 ) = generate_one_rearrangement_given_initial_conditions(
-                    controller,
-                    scene,
-                    start_kwargs,
-                    target_kwargs,
-                    obj_rearrangements,
-                    object_types_to_not_move,
-                    pos,
-                    rot,
+                    controller=controller,
+                    scene=scene,
+                    start_kwargs=start_kwargs,
+                    target_kwargs=target_kwargs,
+                    num_objs_to_move=num_objs_to_move + position_count_offset,
+                    num_objs_to_open=num_objs_to_open,
+                    object_types_to_not_move=object_types_to_not_move,
+                    agent_pos=pos,
+                    agent_rot=rot,
+                    allow_putting_objects_away=try_count >= 30,
                 )
 
                 if opened_data is None:
+                    position_count_offset = max(position_count_offset - 1, 0)
                     print(
-                        f"Skipping {scene}, {pos}, {int(rot['y'])} {start_kwargs}, {target_kwargs}."
+                        f"{episode_seed_string}: Failed during generation."  # {scene}, {pos}, {int(rot['y'])} {start_kwargs}, {target_kwargs}."
                     )
                     continue
 
                 task_spec_dict = {
                     "agent_position": pos,
                     "agent_rotation": int(rot["y"]),
-                    "object_rearrangement_count": int(obj_rearrangements),
+                    "object_rearrangement_count": int(num_objs_to_move)
+                    + int(num_objs_to_open),
                     "openable_data": opened_data,
                     "starting_poses": starting_poses,
                     "target_poses": target_poses,
@@ -343,10 +416,15 @@ def generate_rearrangements_for_scenes(
                 reachable_positions = env.controller.step(
                     "GetReachablePositions"
                 ).metadata["actionReturn"]
+
                 failed = False
                 for gp, cp, pd in zip(gps, cps, pose_diffs):
-                    if pd["iou"] is not None and pd["iou"] < 0.5:
+                    if pd["iou"] is not None and pd["iou"] < IOU_THRESHOLD:
                         assert gp["type"] not in object_types_to_not_move
+
+                    if gp["broken"] or cp["broken"]:
+                        failed = True
+                        break
 
                     pose_diff_energy = env.pose_difference_energy(
                         goal_pose=gp, cur_pose=cp
@@ -363,7 +441,7 @@ def generate_rearrangements_for_scenes(
                         ).metadata["actionReturn"]
                         if interactable_poses is None or len(interactable_poses) == 0:
                             print(
-                                f"{obj_name} is not visible despite needing to be rearranged. Skipping..."
+                                f"{episode_seed_string}: {obj_name} is not visible despite needing to be rearranged."
                             )
                             failed = True
                             break
@@ -389,7 +467,7 @@ def generate_rearrangements_for_scenes(
                             ).min()
                             if dist <= threshold:
                                 print(
-                                    f"{obj_name} is within the threshold ({dist} <= {threshold}), skipping..."
+                                    f"{episode_seed_string}: {obj_name} is within the threshold ({dist} <= {threshold})."
                                 )
                                 failed = True
                                 break
@@ -397,14 +475,35 @@ def generate_rearrangements_for_scenes(
                     continue
 
                 npos_diff = int(
-                    sum(pd["iou"] is not None and pd["iou"] < 0.5 for pd in pose_diffs)
-                )
-                nopen_diff = int(
                     sum(
-                        pd["openness_diff"] is not None and pd["openness_diff"] >= 0.2
+                        pd["iou"] is not None and pd["iou"] < IOU_THRESHOLD
                         for pd in pose_diffs
                     )
                 )
+                nopen_diff = int(
+                    sum(
+                        pd["openness_diff"] is not None
+                        and pd["openness_diff"] >= OPENNESS_THRESHOLD
+                        for pd in pose_diffs
+                    )
+                )
+
+                if npos_diff != num_objs_to_move:
+                    position_count_offset += (npos_diff < num_objs_to_move) - (
+                        npos_diff > num_objs_to_move
+                    )
+                    position_count_offset = max(position_count_offset, 0)
+
+                    print(
+                        f"{episode_seed_string}: Incorrect amount of objects have moved expected != actual ({num_objs_to_move} != {npos_diff})"
+                    )
+                    continue
+
+                if nopen_diff != num_objs_to_open:
+                    print(
+                        f"{episode_seed_string}: Incorrect amount of objects have opened expected != actual ({num_objs_to_open} != {nopen_diff})"
+                    )
+                    continue
 
                 task_spec_dict["position_diff_count"] = npos_diff
                 task_spec_dict["open_diff_count"] = nopen_diff
@@ -422,14 +521,13 @@ def generate_rearrangements_for_scenes(
 
                 if npos_diff > max_obj_rearrangements_per_scene or nopen_diff > 1:
                     print(
-                        f"Final check failed ({npos_diff} [{max_obj_rearrangements_per_scene} max] pos. diffs,"
-                        f" {nopen_diff} [1 max] opened),"
-                        f" skipping {scene}, {pos}, {int(rot['y'])} {start_kwargs}, {target_kwargs}."
+                        f"{episode_seed_string}: Final check failed ({npos_diff} [{max_obj_rearrangements_per_scene} max] pos. diffs,"
+                        f" {nopen_diff} [1 max] opened)"
                     )
                     continue
 
                 out[scene].append(task_spec_dict)
-                print(scene, len(out[scene]))
+                print(f"{episode_seed_string} SUCCESS")
                 break
     return out
 
@@ -441,6 +539,7 @@ def rearrangement_datagen_worker(
         Dict[str, Dict[str, np.ndarray]]
     ] = None,
 ):
+    ptitle("Rearrange Datagen Worker")
     env = RearrangeTHOREnvironment(
         force_cache_reset=True, controller_kwargs={"commit_id": THOR_COMMIT_ID}
     )
@@ -504,19 +603,23 @@ def get_scene_to_obj_name_to_seen_positions():
     return scene_to_obj_name_to_positions
 
 
-if __name__ == "__main__":
+def main():
+    ptitle("Rearrange Datagen Manager")
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", "-d", action="store_true", default=False)
     parser.add_argument("--train_unseen", "-t", action="store_true", default=False)
     args = parser.parse_args()
 
-    nprocesses = max(mp.cpu_count() // 2, 1)
+    nprocesses = (
+        max((3 * mp.cpu_count()) // 4, 1) if platform.system() == "Linux" else 1
+    )
 
     stage_seeds = get_random_seeds()
 
     scene_to_obj_name_to_avoid_positions = None
     if args.debug:
-        stage_to_scenes = {"debug": ["FloorPlan17"]}
+        stage_to_scenes = {"debug": ["FloorPlan428"]}
     elif args.train_unseen:
         stage_to_scenes = {"train_unseen": get_scenes("train")}
         scene_to_obj_name_to_avoid_positions = get_scene_to_obj_name_to_seen_positions()
@@ -579,7 +682,7 @@ if __name__ == "__main__":
         compress_pickle.dump(
             obj=scene_to_rearrangements,
             path=os.path.join(STARTER_DATA_DIR, f"{stage}.pkl.gz"),
-            protocol=pickle.HIGHEST_PROTOCOL,
+            pickler_kwargs={"protocol": 4,},  # Backwards compatible with python 3.6
         )
 
     for p in processes:
@@ -587,3 +690,7 @@ if __name__ == "__main__":
             p.join(timeout=1)
         except:
             pass
+
+
+if __name__ == "__main__":
+    main()

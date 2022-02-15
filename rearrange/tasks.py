@@ -731,7 +731,12 @@ class RearrangeTaskSpecIterable:
             raise StopIteration
         self.remaining_epochs -= 1
 
-        self.remaining_scenes = list(sorted(self.scenes_to_task_spec_dicts.keys()))
+        self.remaining_scenes = list(
+            sorted(
+                self.scenes_to_task_spec_dicts.keys(),
+                key=lambda s: int(s.replace("FloorPlan", "")),
+            )
+        )
         if self.shuffle:
             self.random.shuffle(self.remaining_scenes)
         return self.remaining_scenes

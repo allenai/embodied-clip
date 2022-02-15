@@ -5,6 +5,7 @@ from typing import List, Dict, Set, Optional, Any
 from ai2thor.controller import Controller
 
 from datagen.datagen_constants import OBJECT_TYPES_THAT_CAN_HAVE_IDENTICAL_MESHES
+from rearrange_constants import OPENNESS_THRESHOLD
 
 
 def get_scenes(stage: str) -> List[str]:
@@ -78,24 +79,55 @@ def get_random_seeds(max_seed: int = int(1e8)) -> Dict[str, int]:
     }
 
 
+def check_object_opens(obj: Dict[str, Any], controller: Controller):
+    controller.step(
+        "OpenObject", objectId=obj["objectId"], openness=1.0, forceAction=True,
+    )
+    obj_opened_fully = controller.last_event.metadata["lastActionSuccess"]
+
+    controller.step(
+        "CloseObject", objectId=obj["objectId"], forceAction=True,
+    )
+    obj_closed_fully = controller.last_event.metadata["lastActionSuccess"]
+
+    return obj_opened_fully and obj_closed_fully
+
+
+def get_object_by_name(name: str, controller: Controller):
+    return next(
+        o for o in controller.last_event.metadata["objects"] if o["name"] == name
+    )
+
+
 def open_objs(
-    objects_to_open: List[Dict[str, Any]], controller: Controller
+    object_names_to_open: List[str], controller: Controller
 ) -> Dict[str, Optional[float]]:
     """Opens up the chosen pickupable objects if they're openable."""
     out: Dict[str, Optional[float]] = defaultdict(lambda: None)
-    for obj in objects_to_open:
+    for obj_name in object_names_to_open:
+        obj = get_object_by_name(obj_name, controller)
+
         last_openness = obj["openness"]
         new_openness = last_openness
-        while abs(last_openness - new_openness) <= 0.2:
+        while abs(last_openness - new_openness) <= OPENNESS_THRESHOLD:
             new_openness = random.random()
 
-        controller.step(
+        event = controller.step(
             "OpenObject",
             objectId=obj["objectId"],
             openness=new_openness,
             forceAction=True,
         )
-        out[obj["name"]] = new_openness
+        obj_after_open = get_object_by_name(obj_name, controller)
+
+        if abs(obj_after_open["openness"] - new_openness) > 0.001:
+            raise RuntimeError(
+                f"In scene {event.metadata['sceneName']}, {obj['name']} was supposed to open to {new_openness}"
+                f" from {last_openness} but instead reached {obj_after_open['openness']}. Last action success was:"
+                f" {event.metadata['lastActionSuccess']}"
+            )
+
+        out[obj["name"]] = obj_after_open["openness"]
     return out
 
 
