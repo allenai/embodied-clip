@@ -89,7 +89,7 @@ with open("README.md", "r") as f:
 ## 🔥🆕🔥 What's New in the 2022 Challenge?
 
 Our 2022 AI2-THOR Rearrangement Challenge has several upgrades distinguishing it from the 2021 version:
-1. **New AI2-THOR version.** We've upgraded the version of AI2-THOR we're using from 2.1.0 to 4.1.0, this brings:
+1. **New AI2-THOR version.** We've upgraded the version of AI2-THOR we're using from 2.1.0 to 4.2.0, this brings:
     * Performance improvements
     * The ability to use (the recently announced) headless rendering feature, see 
       [here](https://ai2thor.allenai.org/ithor/documentation/#headless-setup) this makes it much easier to run
@@ -171,7 +171,7 @@ a local `./src` directory. By explicitly specifying the `PIP_SRC` variable we ca
 
 **Python 3.6+ 🐍.** Each of the actions supports `typing` within <span class="chillMono">Python</span>.
 
-**AI2-THOR 4.1.0 🧞.** To ensure reproducible results, we're restricting all users to use the exact same version of <span class="chillMono">AI2-THOR</span>.
+**AI2-THOR 4.2.0 🧞.** To ensure reproducible results, we're restricting all users to use the exact same version of <span class="chillMono">AI2-THOR</span>.
 
 **AllenAct 🏋💪.** We ues the <span class="chillMono">AllenAct</span> reinforcement learning framework 
     for generating baseline models, baseline training pipelines, and for several of their helpful abstractions/utilities.
