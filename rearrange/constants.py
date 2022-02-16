@@ -4,7 +4,7 @@ from pathlib import Path
 MAX_HAND_METERS = 0.5
 FOV = 90
 
-REQUIRED_THOR_VERSION = "4.1.0"
+REQUIRED_THOR_VERSION = "4.2.0"
 STARTER_DATA_DIR = os.path.join(
     os.path.abspath(os.path.dirname(Path(__file__))), "../data", "2022",
 )

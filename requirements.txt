@@ -1,4 +1,4 @@
-ai2thor>=4.1.0
+ai2thor>=4.2.0
 allenact>=0.4.0
 allenact_plugins[ithor]>=0.4.0
 numpy
