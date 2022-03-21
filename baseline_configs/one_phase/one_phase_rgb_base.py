@@ -2,9 +2,14 @@ from abc import ABC
 from typing import Optional, Dict, Sequence
 
 from allenact.base_abstractions.sensor import SensorSuite, Sensor
+from allenact_plugins.clip_plugin.clip_preprocessors import ClipResNetPreprocessor
 
 try:
-    from allenact.embodiedai.sensors.vision_sensors import DepthSensor
+    from allenact.embodiedai.sensors.vision_sensors import (
+        DepthSensor,
+        IMAGENET_RGB_MEANS,
+        IMAGENET_RGB_STDS,
+    )
 except ImportError:
     raise ImportError("Please update to allenact>=0.4.0.")
 
@@ -17,20 +22,34 @@ from rearrange.tasks import RearrangeTaskSampler
 
 
 class OnePhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
-    SENSORS = [
-        RGBRearrangeSensor(
-            height=RearrangeBaseExperimentConfig.SCREEN_SIZE,
-            width=RearrangeBaseExperimentConfig.SCREEN_SIZE,
-            use_resnet_normalization=True,
-            uuid=RearrangeBaseExperimentConfig.EGOCENTRIC_RGB_UUID,
-        ),
-        UnshuffledRGBRearrangeSensor(
-            height=RearrangeBaseExperimentConfig.SCREEN_SIZE,
-            width=RearrangeBaseExperimentConfig.SCREEN_SIZE,
-            use_resnet_normalization=True,
-            uuid=RearrangeBaseExperimentConfig.UNSHUFFLED_RGB_UUID,
-        ),
-    ]
+    @classmethod
+    def sensors(cls) -> Sequence[Sensor]:
+        cnn_type, pretraining_type = cls.CNN_PREPROCESSOR_TYPE_AND_PRETRAINING
+        if pretraining_type.strip().lower() == "clip":
+            mean = ClipResNetPreprocessor.CLIP_RGB_MEANS
+            stdev = ClipResNetPreprocessor.CLIP_RGB_STDS
+        else:
+            mean = IMAGENET_RGB_MEANS
+            stdev = IMAGENET_RGB_STDS
+
+        return [
+            RGBRearrangeSensor(
+                height=RearrangeBaseExperimentConfig.SCREEN_SIZE,
+                width=RearrangeBaseExperimentConfig.SCREEN_SIZE,
+                use_resnet_normalization=True,
+                uuid=RearrangeBaseExperimentConfig.EGOCENTRIC_RGB_UUID,
+                mean=mean,
+                stdev=stdev,
+            ),
+            UnshuffledRGBRearrangeSensor(
+                height=RearrangeBaseExperimentConfig.SCREEN_SIZE,
+                width=RearrangeBaseExperimentConfig.SCREEN_SIZE,
+                use_resnet_normalization=True,
+                uuid=RearrangeBaseExperimentConfig.UNSHUFFLED_RGB_UUID,
+                mean=mean,
+                stdev=stdev,
+            ),
+        ]
 
     @classmethod
     def make_sampler_fn(
@@ -47,7 +66,7 @@ class OnePhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
         **kwargs,
     ) -> RearrangeTaskSampler:
         """Return a RearrangeTaskSampler."""
-        sensors = cls.SENSORS if sensors is None else sensors
+        sensors = cls.sensors() if sensors is None else sensors
         if "mp_ctx" in kwargs:
             del kwargs["mp_ctx"]
         assert not cls.RANDOMIZE_START_ROTATION_DURING_TRAINING

@@ -34,7 +34,9 @@ from rearrange_constants import ABS_PATH_OF_REARRANGE_TOP_LEVEL_DIR
 class TwoPhaseRGBResNetFrozenMapPPOWalkthroughILUnshuffleExperimentConfig(
     TwoPhaseRGBResNetPPOWalkthroughILUnshuffleExperimentConfig
 ):
-    USE_RESNET_CNN = False  # Not necessary as we're handling things in the model
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING = (
+        None  # Not necessary as we're handling things in the model
+    )
     IL_PIPELINE_TYPE: str = "40proc-longtf"
 
     ORDERED_OBJECT_TYPES = list(sorted(PICKUPABLE_OBJECTS + OPENABLE_OBJECTS))

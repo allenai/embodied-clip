@@ -1,10 +1,11 @@
 import os
+from typing import Sequence
 
 import gym
 import torch
 from torch import nn
 
-from allenact.base_abstractions.sensor import SensorSuite
+from allenact.base_abstractions.sensor import SensorSuite, Sensor
 from allenact.embodiedai.mapping.mapping_models.active_neural_slam import (
     ActiveNeuralSLAM,
 )
@@ -27,7 +28,9 @@ from rearrange_constants import ABS_PATH_OF_REARRANGE_TOP_LEVEL_DIR
 class OnePhaseRGBResNetFrozenMapDaggerExperimentConfig(
     OnePhaseRGBILBaseExperimentConfig
 ):
-    USE_RESNET_CNN = False  # Not necessary as we're handling things in the model
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING = (
+        None  # Not necessary as we're handling things in the model
+    )
     IL_PIPELINE_TYPE = "40proc"
 
     ORDERED_OBJECT_TYPES = list(sorted(PICKUPABLE_OBJECTS + OPENABLE_OBJECTS))
@@ -43,10 +46,11 @@ class OnePhaseRGBResNetFrozenMapDaggerExperimentConfig(
         resolution_in_cm=5,
     )
 
-    SENSORS = OnePhaseRGBILBaseExperimentConfig.SENSORS + [
-        RelativePositionChangeTHORSensor(),
-        MAP_RANGE_SENSOR,
-    ]
+    @classmethod
+    def sensors(cls) -> Sequence[Sensor]:
+        return list(
+            super(OnePhaseRGBResNetFrozenMapDaggerExperimentConfig, cls).sensors()
+        ) + [RelativePositionChangeTHORSensor(), cls.MAP_RANGE_SENSOR,]
 
     @classmethod
     def tag(cls) -> str:
@@ -63,7 +67,7 @@ class OnePhaseRGBResNetFrozenMapDaggerExperimentConfig(
         )
 
         observation_space = (
-            SensorSuite(cls.SENSORS).observation_spaces
+            SensorSuite(cls.sensors()).observation_spaces
             if kwargs.get("sensor_preprocessor_graph") is None
             else kwargs["sensor_preprocessor_graph"].observation_spaces
         )

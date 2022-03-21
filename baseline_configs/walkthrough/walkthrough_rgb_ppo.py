@@ -9,7 +9,7 @@ from baseline_configs.walkthrough.walkthrough_rgb_base import (
 
 
 class WalkthroughPPOExperimentConfig(WalkthroughBaseExperimentConfig):
-    USE_RESNET_CNN = False
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING = None
 
     @classmethod
     def tag(cls) -> str:
