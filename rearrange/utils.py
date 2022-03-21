@@ -82,7 +82,7 @@ class BoundedFloat(object):
         """Assert n is within this classes bounded range."""
         if type(n) not in self.types:
             raise ValueError("n must be a float (or an int).")
-        return n >= self.low and n <= self.high
+        return self.low <= n <= self.high
 
 
 class RearrangeActionSpace(object):
@@ -363,8 +363,6 @@ def uniform_box_points(n):
 
 def iou_box_3d(b1: Sequence[Sequence[float]], b2: Sequence[Sequence[float]]) -> float:
     """Calculate the IoU between 3d bounding boxes b1 and b2."""
-    import numpy as np
-
     b1 = np.array(b1)
     b2 = np.array(b2)
 

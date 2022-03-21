@@ -1,6 +1,6 @@
 from typing import Optional, Sequence, Dict
 
-from allenact.base_abstractions.sensor import SensorSuite, Sensor, DepthSensor
+from allenact.base_abstractions.sensor import SensorSuite, Sensor
 
 try:
     from allenact.embodiedai.sensors.vision_sensors import DepthSensor
