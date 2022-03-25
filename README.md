@@ -231,7 +231,7 @@ We are tracking challenge participant entries using the [AI2 Leaderboard](https:
 
 In particular, our 2022 leaderboard links can be found at
 * [**2022 1-phase leaderboard**](https://leaderboard.allenai.org/ithor_rearrangement_1phase_2022) and 
-* [**2022 2-phase leaderboard**](https://leaderboard.allenai.org/ithor_rearrange_2phase_2022).
+* [**2022 2-phase leaderboard**](https://leaderboard.allenai.org/ithor_rearrangement_2phase_2022).
 
 Our older (2021) leaderboards are also available indefinitely ([previous 2021 1-phase leaderboard](https://leaderboard.allenai.org/ithor_rearrangement_1phase), [previous 2021 2-phase leaderboard]](https://leaderboard.allenai.org/ithor_rearrangement_1phase)) Note
 that our 2021 challenge uses a different dataset and older version of AI2-THOR and so results will not be 
