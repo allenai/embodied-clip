@@ -2,7 +2,6 @@ from abc import ABC
 from typing import Optional, Dict, Sequence
 
 from allenact.base_abstractions.sensor import SensorSuite, Sensor
-from allenact_plugins.clip_plugin.clip_preprocessors import ClipResNetPreprocessor
 
 try:
     from allenact.embodiedai.sensors.vision_sensors import (
@@ -26,6 +25,10 @@ class OnePhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
     def sensors(cls) -> Sequence[Sensor]:
         cnn_type, pretraining_type = cls.CNN_PREPROCESSOR_TYPE_AND_PRETRAINING
         if pretraining_type.strip().lower() == "clip":
+            from allenact_plugins.clip_plugin.clip_preprocessors import (
+                ClipResNetPreprocessor,
+            )
+
             mean = ClipResNetPreprocessor.CLIP_RGB_MEANS
             stdev = ClipResNetPreprocessor.CLIP_RGB_STDS
         else:

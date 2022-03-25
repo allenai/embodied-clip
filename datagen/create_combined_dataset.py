@@ -30,11 +30,9 @@ def combine(task_limit_for_train: int = 10000):
                 task_spec_dict["index"] = index
                 task_spec_dict["stage"] = stage
 
-            pieces_per_part = max_per_scene // 5 # 5 hardnesses
+            pieces_per_part = max_per_scene // 5  # 5 hardnesses
             parts = partition_sequence(data[scene], 5)
-            all_together = sum(
-                [part[:pieces_per_part] for part in parts], []
-            )
+            all_together = sum([part[:pieces_per_part] for part in parts], [])
 
             count += len(all_together)
             all_data[scene].extend(all_together)

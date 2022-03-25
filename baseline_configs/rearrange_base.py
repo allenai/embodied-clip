@@ -19,13 +19,10 @@ from allenact.base_abstractions.experiment_config import (
 )
 from allenact.base_abstractions.preprocessor import SensorPreprocessorGraph
 from allenact.base_abstractions.sensor import SensorSuite, Sensor, ExpertActionSensor
-from allenact.embodiedai.preprocessors.resnet import (
-    ResNetPreprocessor
-)
+from allenact.embodiedai.preprocessors.resnet import ResNetPreprocessor
 from allenact.utils.experiment_utils import TrainingPipeline, LinearDecay, Builder
 from allenact.utils.misc_utils import partition_sequence, md5_hash_str_as_int
 from allenact.utils.system import get_logger
-from allenact_plugins.clip_plugin.clip_preprocessors import ClipResNetPreprocessor
 from allenact_plugins.ithor_plugin.ithor_sensors import (
     BinnedPointCloudMapTHORSensor,
     SemanticMapTHORSensor,
@@ -146,6 +143,15 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
                     output_uuid=out_uuid,
                 )
             elif pretraining_type == "clip":
+                from allenact_plugins.clip_plugin.clip_preprocessors import (
+                    ClipResNetPreprocessor,
+                )
+                import clip
+
+                # Let's make sure we download the clip model now
+                # so we don't download it on every spawned process
+                clip.load(cnn_type, "cpu")
+
                 return ClipResNetPreprocessor(
                     rgb_input_uuid=in_uuid,
                     clip_model_type=cnn_type,
