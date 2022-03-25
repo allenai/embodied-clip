@@ -1,7 +1,7 @@
 import copy
 import platform
 from abc import abstractmethod
-from typing import Optional, List, Sequence, Dict, Any
+from typing import Optional, List, Sequence, Dict, Any, Tuple
 
 import ai2thor.platform
 import gym.spaces
@@ -64,7 +64,7 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
     # Training parameters
     TRAINING_STEPS = int(75e6)
     SAVE_INTERVAL = int(1e6)
-    USE_RESNET_CNN = False
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING: Optional[Tuple[str, str]] = None
 
     # Sensor info
     SENSORS: Optional[Sequence[Sensor]] = None
@@ -94,6 +94,10 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
     )
 
     @classmethod
+    def sensors(cls) -> Sequence[Sensor]:
+        return cls.SENSORS
+
+    @classmethod
     def actions(cls):
         other_move_actions = (
             tuple()
@@ -119,24 +123,50 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
     @classmethod
     def resnet_preprocessor_graph(cls, mode: str) -> SensorPreprocessorGraph:
         def create_resnet_builder(in_uuid: str, out_uuid: str):
-            return ResNetPreprocessor(
-                input_height=cls.THOR_CONTROLLER_KWARGS["height"],
-                input_width=cls.THOR_CONTROLLER_KWARGS["width"],
-                output_width=7,
-                output_height=7,
-                output_dims=512,
-                pool=False,
-                torchvision_resnet_model=torchvision.models.resnet18,
-                input_uuids=[in_uuid],
-                output_uuid=out_uuid,
-            )
+            cnn_type, pretraining_type = cls.CNN_PREPROCESSOR_TYPE_AND_PRETRAINING
+            if pretraining_type == "imagenet":
+                assert cnn_type in [
+                    "RN18",
+                    "RN50",
+                ], "Only allow using RN18/RN50 with `imagenet` pretrained weights."
+                return ResNetPreprocessor(
+                    input_height=cls.THOR_CONTROLLER_KWARGS["height"],
+                    input_width=cls.THOR_CONTROLLER_KWARGS["width"],
+                    output_width=7,
+                    output_height=7,
+                    output_dims=512 if "18" in cnn_type else 2048,
+                    pool=False,
+                    torchvision_resnet_model=getattr(
+                        torchvision.models, f"resnet{cnn_type.replace('RN', '')}"
+                    ),
+                    input_uuids=[in_uuid],
+                    output_uuid=out_uuid,
+                )
+            elif pretraining_type == "clip":
+                from allenact_plugins.clip_plugin.clip_preprocessors import (
+                    ClipResNetPreprocessor,
+                )
+                import clip
+
+                # Let's make sure we download the clip model now
+                # so we don't download it on every spawned process
+                clip.load(cnn_type, "cpu")
+
+                return ClipResNetPreprocessor(
+                    rgb_input_uuid=in_uuid,
+                    clip_model_type=cnn_type,
+                    pool=False,
+                    output_uuid=out_uuid,
+                )
+            else:
+                raise NotImplementedError
 
         img_uuids = [cls.EGOCENTRIC_RGB_UUID, cls.UNSHUFFLED_RGB_UUID]
         return SensorPreprocessorGraph(
             source_observation_spaces=SensorSuite(
                 [
                     sensor
-                    for sensor in cls.SENSORS
+                    for sensor in cls.sensors()
                     if (mode == "train" or not isinstance(sensor, ExpertActionSensor))
                 ]
             ).observation_spaces,
@@ -194,7 +224,7 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
             devices=devices,
             sampler_devices=sampler_devices,
             sensor_preprocessor_graph=cls.resnet_preprocessor_graph(mode=mode)
-            if cls.USE_RESNET_CNN
+            if cls.CNN_PREPROCESSOR_TYPE_AND_PRETRAINING is not None
             else None,
         )
 
@@ -255,7 +285,6 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
         thor_platform: Optional[ai2thor.platform.BaseLinuxPlatform] = None
         if platform.system() == "Linux":
             try:
-                raise IOError
                 x_displays = get_open_x_displays(throw_error_if_empty=True)
 
                 if devices is not None and len(
@@ -289,7 +318,7 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
             },
         }
 
-        sensors = kwargs.get("sensors", copy.deepcopy(cls.SENSORS))
+        sensors = kwargs.get("sensors", copy.deepcopy(cls.sensors()))
         kwargs["sensors"] = sensors
 
         sem_sensor = next(
@@ -452,10 +481,10 @@ class RearrangeBaseExperimentConfig(ExperimentConfig):
 
     @classmethod
     def create_model(cls, **kwargs) -> nn.Module:
-        if not cls.USE_RESNET_CNN:
+        if cls.CNN_PREPROCESSOR_TYPE_AND_PRETRAINING is None:
             return RearrangeActorCriticSimpleConvRNN(
                 action_space=gym.spaces.Discrete(len(cls.actions())),
-                observation_space=SensorSuite(cls.SENSORS).observation_spaces,
+                observation_space=SensorSuite(cls.sensors()).observation_spaces,
                 rgb_uuid=cls.EGOCENTRIC_RGB_UUID,
                 unshuffled_rgb_uuid=cls.UNSHUFFLED_RGB_UUID,
             )

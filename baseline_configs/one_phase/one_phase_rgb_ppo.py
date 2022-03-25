@@ -9,7 +9,7 @@ from baseline_configs.one_phase.one_phase_rgb_base import (
 
 
 class OnePhaseRGBPPOExperimentConfig(OnePhaseRGBBaseExperimentConfig):
-    USE_RESNET_CNN = False
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING = None
 
     @classmethod
     def tag(cls) -> str:

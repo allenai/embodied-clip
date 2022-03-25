@@ -6,7 +6,7 @@ from baseline_configs.two_phase.two_phase_rgb_ppowalkthrough_ilunshuffle import 
 class TwoPhaseRGBResNetPPOWalkthroughILUnshuffleExperimentConfig(
     TwoPhaseRGBPPOWalkthroughILUnshuffleExperimentConfig
 ):
-    USE_RESNET_CNN = True
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING = ("RN18", "imagenet")
     IL_PIPELINE_TYPE: str = "40proc-longtf"
 
     @classmethod

@@ -111,7 +111,7 @@ class TwoPhaseRGBBaseExperimentConfig(RearrangeBaseExperimentConfig, ABC):
             any(k in a for k in ["drop", "open", "pickup"]) for a in cls.actions()
         ]
 
-        if not cls.USE_RESNET_CNN:
+        if cls.CNN_PREPROCESSOR_TYPE_AND_PRETRAINING is None:
             return TwoPhaseRearrangeActorCriticSimpleConvRNN(
                 action_space=gym.spaces.Discrete(len(cls.actions())),
                 observation_space=SensorSuite(cls.SENSORS).observation_spaces,

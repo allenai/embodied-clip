@@ -45,7 +45,7 @@ class MaskedPPO(AbstractActorCriticLoss):
         mask = batch["observations"][self.mask_uuid].float()
         denominator = mask.sum().item()
 
-        losses_per_step = self._ppo_loss.loss_per_step(
+        losses_per_step, _ = self._ppo_loss.loss_per_step(
             step_count=step_count, batch=batch, actor_critic_output=actor_critic_output,
         )
         losses_per_step["entropy"] = (

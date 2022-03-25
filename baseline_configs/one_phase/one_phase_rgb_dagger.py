@@ -4,7 +4,7 @@ from baseline_configs.one_phase.one_phase_rgb_il_base import (
 
 
 class OnePhaseRGBDaggerExperimentConfig(OnePhaseRGBILBaseExperimentConfig):
-    USE_RESNET_CNN = False
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING = None
     IL_PIPELINE_TYPE = "40proc"
 
     @classmethod

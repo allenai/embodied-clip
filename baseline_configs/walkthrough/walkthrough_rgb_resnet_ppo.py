@@ -4,7 +4,7 @@ from baseline_configs.walkthrough.walkthrough_rgb_ppo import (
 
 
 class WalkthroughRGBResNetPPOExperimentConfig(WalkthroughPPOExperimentConfig):
-    USE_RESNET_CNN = True
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING = ("RN18", "imagenet")
 
     @classmethod
     def tag(cls) -> str:

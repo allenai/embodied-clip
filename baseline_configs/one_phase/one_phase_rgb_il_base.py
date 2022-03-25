@@ -3,7 +3,7 @@ from typing import Tuple, Sequence, Optional, Dict, Any
 import torch
 
 from allenact.algorithms.onpolicy_sync.losses.imitation import Imitation
-from allenact.base_abstractions.sensor import ExpertActionSensor
+from allenact.base_abstractions.sensor import ExpertActionSensor, Sensor
 from allenact.utils.experiment_utils import PipelineStage
 from allenact.utils.misc_utils import all_unique
 from baseline_configs.one_phase.one_phase_rgb_base import (
@@ -85,12 +85,14 @@ def il_training_params(label: str, training_steps: int):
 
 
 class OnePhaseRGBILBaseExperimentConfig(OnePhaseRGBBaseExperimentConfig):
-    SENSORS = [
-        *OnePhaseRGBBaseExperimentConfig.SENSORS,
-        ExpertActionSensor(len(RearrangeBaseExperimentConfig.actions())),
-    ]
-
     IL_PIPELINE_TYPE: Optional[str] = None
+
+    @classmethod
+    def sensors(cls) -> Sequence[Sensor]:
+        return [
+            *super(OnePhaseRGBILBaseExperimentConfig, cls).sensors(),
+            ExpertActionSensor(len(RearrangeBaseExperimentConfig.actions())),
+        ]
 
     @classmethod
     def _training_pipeline_info(cls, **kwargs) -> Dict[str, Any]:

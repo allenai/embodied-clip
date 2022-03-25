@@ -229,8 +229,11 @@ be used for evaluation.
 
 We are tracking challenge participant entries using the [AI2 Leaderboard](https://leaderboard.allenai.org/). The team with the best submission made to either of the below leaderboards by May 31st (midnight, [anywhere on earth](https://time.is/Anywhere_on_Earth)) will be announced at the [CVPR'21 Embodied-AI Workshop](https://embodied-ai.org/) and invited to produce a video describing their approach.
 
-**Submission leaderboard links will be announced soon (late Feb 2022). Please check back here.** Our 2021
-leaderboard links can be found [here](https://leaderboard.allenai.org/ithor_rearrangement_1phase) and [here](https://leaderboard.allenai.org/ithor_rearrangement_2phase). Note
+In particular, our 2022 leaderboard links can be found at
+* [**2022 1-phase leaderboard**](https://leaderboard.allenai.org/ithor_rearrangement_1phase_2022) and 
+* [**2022 1-phase leaderboard**](https://leaderboard.allenai.org/ithor_rearrangement_2phase_2022).
+
+Our older (2021) leaderboards are also available indefinitely ([previous 2021 1-phase leaderboard](https://leaderboard.allenai.org/ithor_rearrangement_1phase), [previous 2021 2-phase leaderboard]](https://leaderboard.allenai.org/ithor_rearrangement_1phase)) Note
 that our 2021 challenge uses a different dataset and older version of AI2-THOR and so results will not be 
 directly comparable.
 
@@ -531,18 +534,23 @@ allenact -o rearrange_out -b . baseline_configs/two_phase/two_phase_rgb_resnet_p
 
 ### 💪 Pretrained Models
 
-We currently provide the following pretrained models (see [our paper](https://arxiv.org/abs/2103.16544) for details
-on these models):
+In the below table we provide a collection of pretrained models from:
 
-| Model | % Fixed Strict (Test, on 2021 dataset) | Pretrained Model |
-|------------|:--------------------------------------:|:----------:|
-| [1-Phase ResNet18+ANM IL](baseline_configs/one_phase/one_phase_rgb_resnet_frozen_map_dagger.py) |                  8.9%                  | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetFrozenMapDagger_40proc__stage_00__steps_000040060240.pt) |
-| [1-Phase ResNet18 IL](baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py) |                  6.3%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetDagger_40proc__stage_00__steps_000050058550.pt) |
-| [1-Phase ResNet18 PPO](baseline_configs/one_phase/one_phase_rgb_resnet_ppo.py) |                  5.3%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetPPO__stage_00__steps_000060068000.pt) |
-| [1-Phase Simple IL](baseline_configs/one_phase/one_phase_rgb_dagger.py) |                  4.8%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBDagger_40proc__stage_00__steps_000065070800.pt) |
-| [1-Phase Simple PPO](baseline_configs/one_phase/one_phase_rgb_ppo.py) |                  4.6%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBPPO__stage_00__steps_000010010730.pt) |
-| [2-Phase ResNet18+ANM IL+PPO](baseline_configs/two_phase_rgb_resnet_frozen_map_ppowalkthrough_ilunshuffle.py) |                 1.44%                  | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetFrozenMapPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000075000985.pt) |
-| [2-Phase ResNet18 IL+PPO](baseline_configs/two_phase/two_phase_rgb_resnet_ppowalkthrough_ilunshuffle.py) |                 0.66%                  | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000020028800.pt) |
+1. [Our CVPR'21 paper introducing this challenge](https://arxiv.org/abs/2103.16544), and
+2. [Our CVPR'22 paper which showed that using CLIP visual encodings can dramatically improve model performance acros embodied tasks](https://arxiv.org/abs/2111.09888).
+
+We have only evaluated a subset of these models on our 2022 dataset.
+
+| Model | % Fixed Strict (2022 dataset, test) | % Fixed Strict (2021 dataset, test) | Pretrained Model |
+|------------|:-----------------------------------:|:-----------------------------------:|:----------:|
+| [1-Phase Embodied CLIP ResNet50 IL](baseline_configs/one_phase/one_phase_rgb_clipresnet50_dagger.py) |              **19.1%**              |              **17.3%**              | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBClipResNet50Dagger_40proc__stage_00__steps_000065083050.pt) |
+| [1-Phase ResNet18+ANM IL](baseline_configs/one_phase/one_phase_rgb_resnet_frozen_map_dagger.py) |                  -                  |                8.9%                 | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetFrozenMapDagger_40proc__stage_00__steps_000040060240.pt) |
+| [1-Phase ResNet18 IL](baseline_configs/one_phase/one_phase_rgb_resnet_dagger.py) |                  -                  |                6.3%                 | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetDagger_40proc__stage_00__steps_000050058550.pt) |
+| [1-Phase ResNet18 PPO](baseline_configs/one_phase/one_phase_rgb_resnet_ppo.py) |                  -                  |                5.3%                 | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBResNetPPO__stage_00__steps_000060068000.pt) |
+| [1-Phase Simple IL](baseline_configs/one_phase/one_phase_rgb_dagger.py) |                  -                  |                4.8%                 | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBDagger_40proc__stage_00__steps_000065070800.pt) |
+| [1-Phase Simple PPO](baseline_configs/one_phase/one_phase_rgb_ppo.py) |                  -                  |                4.6%                 | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBPPO__stage_00__steps_000010010730.pt) |
+| [2-Phase ResNet18+ANM IL+PPO](baseline_configs/two_phase_rgb_resnet_frozen_map_ppowalkthrough_ilunshuffle.py) |              **0.53%**              |              **1.44%**              | [(link)](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetFrozenMapPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000075000985.pt) |
+| [2-Phase ResNet18 IL+PPO](baseline_configs/two_phase/two_phase_rgb_resnet_ppowalkthrough_ilunshuffle.py) |                  -                  |                0.66%                | [(link)](https://s3.console.aws.amazon.com/s3/object/prior-model-weights?prefix=embodied-ai/rearrangement/two-phase/exp_TwoPhaseRGBResNetPPOWalkthroughILUnshuffle_40proc-longtf__stage_00__steps_000020028800.pt) |
 
 These models can be downloaded at from the above links and should be placed into the `pretrained_model_ckpts` directory.
 You can then, for example, run inference for the _1-Phase ResNet18 IL_ model using AllenAct by running:

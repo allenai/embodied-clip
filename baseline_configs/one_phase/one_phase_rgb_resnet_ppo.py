@@ -2,7 +2,7 @@ from baseline_configs.one_phase.one_phase_rgb_ppo import OnePhaseRGBPPOExperimen
 
 
 class OnePhaseRGBResNetPPOExperimentConfig(OnePhaseRGBPPOExperimentConfig):
-    USE_RESNET_CNN = True
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING = ("RN18", "imagenet")
 
     @classmethod
     def tag(cls) -> str:

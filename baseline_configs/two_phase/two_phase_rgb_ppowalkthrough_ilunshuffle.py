@@ -23,7 +23,7 @@ class TwoPhaseRGBPPOWalkthroughILUnshuffleExperimentConfig(
         ExpertActionSensor(len(RearrangeBaseExperimentConfig.actions())),
     ]
 
-    USE_RESNET_CNN = False
+    CNN_PREPROCESSOR_TYPE_AND_PRETRAINING = None
     IL_PIPELINE_TYPE: str = "40proc-longtf"
 
     @classmethod

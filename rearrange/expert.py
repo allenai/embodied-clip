@@ -432,7 +432,7 @@ class GreedyUnshuffleExpert:
 
         assert self.task.num_steps_taken() == 0
 
-        self.expert_action_list: List[int] = []
+        self.expert_action_list: List[Optional[int]] = []
 
         self._last_held_object_name: Optional[str] = None
         self._last_to_interact_object_pose: Optional[Dict[str, Any]] = None
