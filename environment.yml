@@ -1,0 +1,34 @@
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - aihabitat
+  - defaults
+dependencies:
+  - python=3.6
+  - cmake=3.14.0
+  - cudatoolkit=11.0
+  - pytorch=1.7.1
+  - torchvision
+  - habitat-sim=0.1.7
+  - withbullet
+  - headless
+  - quaternion
+  - ca-certificates
+  - openssl
+  - pip:
+    - gym>=0.17.3
+    - numpy>=1.16.1
+    - yacs>=0.1.5
+    - attrs>=19.1.0
+    - opencv-python>=3.3.0
+    - pickle5
+    - imageio>=2.2.0
+    - imageio-ffmpeg>=0.2.0
+    - scipy>=1.0.0
+    - tqdm>=4.0.0
+    - numba>=0.44.0
+    - ftfy
+    - regex
+    - git+https://github.com/openai/CLIP.git
+    - -e .
