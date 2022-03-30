@@ -16,6 +16,7 @@ dependencies:
   - quaternion
   - ca-certificates
   - openssl
+  - pip=21.3.1
   - pip:
     - gym>=0.17.3
     - numpy>=1.16.1
@@ -30,5 +31,5 @@ dependencies:
     - numba>=0.44.0
     - ftfy
     - regex
-    - git+https://github.com/openai/CLIP.git
+    - clip @ git+https://github.com/openai/CLIP.git@40f5484c1c74edd83cb9cf687c6ab92b28d8b656
     - -e .

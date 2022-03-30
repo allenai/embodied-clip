@@ -60,11 +60,16 @@ If you use the Habitat platform in your research, please cite the following [pap
 
 ## Installation
 
-1. After cloning this branch, you can install dependencies through the following conda environment. It uses `cudatoolkit=11.0` by default, but please change this appropriately (see environment.yml, line 10).
+```bash
+git clone -b habitat --single-branch git@github.com:allenai/embodied-clip.git embclip-habitat
+cd embclip-habitat
+```
+
+1. You can install dependencies through the following conda environment. Please adjust the `cudatoolkit` version appropriately (must be compatible with `pytorch=1.7.1`) in `environment.yml` (line 10).
 
 ```bash
-conda env create --name clip-habitat --file environment.yml
-conda activate clip-habitat
+conda env create --name embclip-habitat
+conda activate embclip-habitat
 ```
 
 2. Download the test scenes data.
