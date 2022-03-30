@@ -60,31 +60,23 @@ If you use the Habitat platform in your research, please cite the following [pap
 
 ## Installation
 
+1. After cloning this branch, you can install dependencies through the following conda environment. It uses `cudatoolkit=11.0` by default, but please change this appropriately (see environment.yml, line 10).
+
+```bash
+conda env create --name clip-habitat --file environment.yml
+conda activate clip-habitat
 ```
-conda create -n habitat python=3.6 cmake=3.14.0
-conda activate habitat
+
+2. Download the test scenes data.
+
+```bash
+wget http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip
+unzip habitat-test-scenes.zip && rm habitat-test-scenes.zip
 ```
 
-1. Clone a stable version from the github repository and install habitat-lab using the commands below. Note that python>=3.6 is required for working with habitat-lab. All the development and testing was done using python3.6. Please use 3.6 to avoid possible issues.
+3. Run the example script `python examples/example.py ` which in the end should print out number of steps agent took inside an environment (eg: `Episode finished after 2 steps.`). To verify that tests pass run `python setup.py test` which should print out a log about passed, skipped and failed tests.
 
-    ```bash
-    git clone https://github.com/allenai/clip-habitat.git
-    cd habitat-lab
-    pip install -r requirements.txt
-    python setup.py develop --all # install habitat and habitat_baselines
-    ```
-
-2. Install `habitat-sim` from [github repo](https://github.com/facebookresearch/habitat-sim).
-
-    ```bash
-    conda install habitat-sim==0.1.7 withbullet headless -c conda-forge -c aihabitat
-    ```
-
-3. Download the [test scenes data](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract `data` folder in zip to `habitat-lab/data/` where `habitat-lab/` is the github repository folder.
-
-4. Run the example script `python examples/example.py ` which in the end should print out number of steps agent took inside an environment (eg: `Episode finished after 2 steps.`). To verify that tests pass run `python setup.py test` which should print out a log about passed, skipped and failed tests.
-
-5. Run `python examples/benchmark.py` to evaluate a forward only agent in a test environment downloaded in step-3.
+4. Run `python examples/benchmark.py` to evaluate a forward only agent in a test environment downloaded in step-3.
 
 ## Example
 <!--- Please, update `examples/example.py` if you update example. -->
