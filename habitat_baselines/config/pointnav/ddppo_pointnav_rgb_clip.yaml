@@ -3,22 +3,22 @@ TRAINER_NAME: "ddppo"
 ENV_NAME: "NavRLEnv"
 SENSORS: ["RGB_SENSOR"]
 
-NUM_ENVIRONMENTS: 10
+NUM_ENVIRONMENTS: 20
 TOTAL_NUM_STEPS: 2.5e8
 NUM_UPDATES: -1
 CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000"]
 FORCE_TORCH_SINGLE_THREADED: True
 
 LOG_INTERVAL: 10
-LOG_FILE: "~/logs/pointnav-rgb-clip/train.log"
+LOG_FILE: "logs/pointnav-rgb-clip/train.log"
 VIDEO_OPTION: ["tensorboard"]
-TENSORBOARD_DIR: "~/logs/pointnav-rgb-clip/tb"
+TENSORBOARD_DIR: "logs/pointnav-rgb-clip/tb"
 
-CHECKPOINT_FOLDER: "~/logs/pointnav-rgb-clip"
-EVAL_CKPT_PATH_DIR: "~/logs/pointnav-rgb-clip"
-NUM_CHECKPOINTS: 100
+CHECKPOINT_FOLDER: "logs/pointnav-rgb-clip"
+EVAL_CKPT_PATH_DIR: "logs/pointnav-rgb-clip"
+NUM_CHECKPOINTS: 10
 CHECKPOINT_INTERVAL: -1
-EVAL_DURING_TRAIN: False
+EVAL_DURING_TRAIN: True
 TEST_EPISODE_COUNT: -1
 EVAL:
   USE_CKPT_CONFIG: False

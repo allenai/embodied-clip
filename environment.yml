@@ -13,6 +13,8 @@ dependencies:
   - habitat-sim=0.1.7
   - withbullet
   - headless
+  - x264=='1!152.20180717'
+  - ffmpeg=4.0.2
   - quaternion
   - ca-certificates
   - openssl

@@ -1,5 +1,5 @@
-EVAL_CKPT_PATH_DIR: "~/logs/objectnav-rgb-clip-avgpool_eval/ckpt.70.pth"
-LOG_FILE: "~/logs/objectnav-rgb-clip-avgpool_eval/eval_175M.log"
+EVAL_CKPT_PATH_DIR: "pretrained_models/objectnav-rgb-clip.175M.pth"
+LOG_FILE: "logs/objectnav-rgb-clip-avgpool/eval.log"
 SIMULATOR_GPU_ID: 0
 TORCH_GPU_ID: 0
 NUM_ENVIRONMENTS: 11
@@ -18,7 +18,7 @@ SENSORS: ["RGB_SENSOR"]
 
 LOG_INTERVAL: 10
 VIDEO_OPTION: ["tensorboard"]
-TENSORBOARD_DIR: "~/logs/objectnav-rgb-clip-avgpool_eval/tb"
+TENSORBOARD_DIR: "logs/objectnav-rgb-clip-avgpool/tb"
 
 CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000", "TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.SHUFFLE", "False", "TASK_CONFIG.SEED", "1"]
 FORCE_TORCH_SINGLE_THREADED: True

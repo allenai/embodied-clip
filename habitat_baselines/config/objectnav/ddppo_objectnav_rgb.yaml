@@ -10,13 +10,13 @@ CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_S
 FORCE_TORCH_SINGLE_THREADED: True
 
 LOG_INTERVAL: 10
-LOG_FILE: "~/logs/objectnav-rgb-baseline/train.log"
+LOG_FILE: "logs/objectnav-rgb-baseline/train.log"
 VIDEO_OPTION: ["tensorboard"]
-TENSORBOARD_DIR: "~/logs/objectnav-rgb-baseline/tb"
+TENSORBOARD_DIR: "logs/objectnav-rgb-baseline/tb"
 
-CHECKPOINT_FOLDER: "~/logs/objectnav-rgb-baseline"
-EVAL_CKPT_PATH_DIR: "~/logs/objectnav-rgb-baseline"
-NUM_CHECKPOINTS: 500
+CHECKPOINT_FOLDER: "logs/objectnav-rgb-baseline"
+EVAL_CKPT_PATH_DIR: "logs/objectnav-rgb-baseline"
+NUM_CHECKPOINTS: 10
 CHECKPOINT_INTERVAL: -1
 EVAL_DURING_TRAIN: True
 TEST_EPISODE_COUNT: -1
@@ -25,7 +25,6 @@ EVAL:
   DEVICE: 'cpu'
   NUM_ENVIRONMENTS: 1
   SPLIT: val_mini
-
 
 RL:
   SUCCESS_REWARD: 2.5

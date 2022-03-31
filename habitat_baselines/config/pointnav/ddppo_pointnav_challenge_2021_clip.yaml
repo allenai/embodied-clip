@@ -1,24 +1,24 @@
-BASE_TASK_CONFIG_PATH: "configs/challenge-2021/challenge_pointnav2021_train.rgbd.yaml"
+BASE_TASK_CONFIG_PATH: "challenge-2021/configs/challenge_pointnav2021_train.rgbd.yaml"
 TRAINER_NAME: "ddppo"
 ENV_NAME: "NavRLEnv"
 SENSORS: ["DEPTH_SENSOR", "RGB_SENSOR"]
 
-NUM_ENVIRONMENTS: 10
-TOTAL_NUM_STEPS: 5e8
+NUM_ENVIRONMENTS: 20
+TOTAL_NUM_STEPS: 2.5e8
 NUM_UPDATES: -1
 CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000"]
 FORCE_TORCH_SINGLE_THREADED: True
 
 LOG_INTERVAL: 10
-LOG_FILE: "~/logs/pointnav-challenge-2021-clip/train.log"
+LOG_FILE: "logs/pointnav-challenge-2021-clip/train.log"
 VIDEO_OPTION: ["tensorboard"]
-TENSORBOARD_DIR: "~/logs/pointnav-challenge-2021-clip/tb"
+TENSORBOARD_DIR: "logs/pointnav-challenge-2021-clip/tb"
 
-CHECKPOINT_FOLDER: "~/logs/pointnav-challenge-2021-clip"
-EVAL_CKPT_PATH_DIR: "~/logs/pointnav-challenge-2021-clip"
-NUM_CHECKPOINTS: 100
+CHECKPOINT_FOLDER: "logs/pointnav-challenge-2021-clip"
+EVAL_CKPT_PATH_DIR: "logs/pointnav-challenge-2021-clip"
+NUM_CHECKPOINTS: 10
 CHECKPOINT_INTERVAL: -1
-EVAL_DURING_TRAIN: False
+EVAL_DURING_TRAIN: True
 TEST_EPISODE_COUNT: -1
 EVAL:
   USE_CKPT_CONFIG: False

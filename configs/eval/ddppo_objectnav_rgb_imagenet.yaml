@@ -1,5 +1,5 @@
-EVAL_CKPT_PATH_DIR: "~/logs/objectnav-rgb-imagenet_eval/ckpt.70.pth"
-LOG_FILE: "~/logs/objectnav-rgb-imagenet_eval/eval_175M.log"
+EVAL_CKPT_PATH_DIR: "pretrained_models/objectnav-rgb-imagenet.175M.pth"
+LOG_FILE: "logs/objectnav-rgb-imagenet/eval.log"
 SIMULATOR_GPU_ID: 0
 TORCH_GPU_ID: 0
 NUM_ENVIRONMENTS: 11
@@ -18,7 +18,7 @@ SENSORS: ["RGB_SENSOR"]
 
 LOG_INTERVAL: 10
 VIDEO_OPTION: ["tensorboard"]
-TENSORBOARD_DIR: "~/logs/objectnav-rgb-imagenet_eval/tb"
+TENSORBOARD_DIR: "logs/objectnav-rgb-imagenet/tb"
 
 CMD_TRAILING_OPTS: ["TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.MAX_SCENE_REPEAT_STEPS", "50000", "TASK_CONFIG.ENVIRONMENT.ITERATOR_OPTIONS.SHUFFLE", "False"]
 FORCE_TORCH_SINGLE_THREADED: True
