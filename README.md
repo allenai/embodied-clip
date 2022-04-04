@@ -1,6 +1,8 @@
 # Embodied CLIP
 
-Official repository for [Simple but Effective: CLIP Embeddings for Embodied AI](https://arxiv.org/abs/2111.09888). We present competitive performance on navigation-heavy tasks in Embodied AI using frozen visual representations from [CLIP](https://github.com/openai/CLIP).
+Official repository for [Simple but Effective: CLIP Embeddings for Embodied AI](https://arxiv.org/abs/2111.09888).
+
+We present competitive performance on navigation-heavy tasks in Embodied AI using frozen visual representations from [CLIP](https://github.com/openai/CLIP).
 
 This repository includes all code and pretrained models necessary to replicate the experiments in our paper:
 - Baselines
@@ -9,7 +11,7 @@ This repository includes all code and pretrained models necessary to replicate t
   - [Habitat ObjectNav](#navigation-in-habitat) (Sec. 4.3)
   - [Habitat PointNav](#navigation-in-habitat) (Sec. 4.4)
 - [Probing for Navigational Primitives](#primitive-probing) (Sec. 5)
-- [Zero-shot ObjectNav in RoboTHOR](#zeroshot-objectnav) (Sec. 7)
+- [Zero-shot ObjectNav in RoboTHOR](#zero-shot-objectnav) (Sec. 7)
 
 We have included forks of other repositories as branches of this repository, as we find this is a convenient way to centralize our experiments and track changes across codebases.
 
@@ -40,7 +42,8 @@ conda env update --file allenact_plugins/clip_plugin/extra_environment.yml --nam
 # Download RoboTHOR dataset
 bash datasets/download_navigation_datasets.sh robothor-objectnav
 
-# Download CLIP model
+# Download pretrained ImageNet and CLIP visual encoders
+python -c "from torchvision import models; models.resnet50(pretrained=True)"
 python -c "import clip; clip.load('RN50')"
 ```
 
@@ -50,6 +53,7 @@ Please refer to the [official AllenAct installation instructions](https://allena
 
 ```bash
 # ImageNet
+PYTHONPATH=. python allenact/main.py -o storage/objectnav-robothor-rgb-imagenet-rn50 -b projects/objectnav_baselines/experiments/robothor objectnav_robothor_rgb_resnet50gru_ddppo
 
 # CLIP
 PYTHONPATH=. python allenact/main.py -o storage/objectnav-robothor-rgb-clip-rn50 -b projects/objectnav_baselines/experiments/robothor/clip objectnav_robothor_rgb_clipresnet50gru_ddppo
@@ -65,7 +69,7 @@ curl -o pretrained_model_ckpts/objectnav-robothor-imagenet-rn50.195M.pt https://
 curl -o pretrained_model_ckpts/objectnav-robothor-clip-rn50.130M.pt https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/navigation/exp_Objectnav-RoboTHOR-RGB-ClipResNet50GRU-DDPPO__stage_00__steps_000130091717.pt
 ```
 
-You can use these models with the `python allenact/main.py` argument `-c pretrained_model_ckpts/objectnav-robothor-clip-rn50.130M.pt` (as an example).
+You can use these models with the `python allenact/main.py` arguments `-c pretrained_model_ckpts/objectnav-robothor-imagenet-rn50.195M.pt` or `-c pretrained_model_ckpts/objectnav-robothor-clip-rn50.130M.pt`.
 
 ### Evaluating 
 
