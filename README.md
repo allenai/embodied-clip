@@ -83,10 +83,10 @@ We have provided (best validation) checkpoints for the CLIP and ImageNet agents 
 
 ```bash
 mkdir pretrained_models
-curl -o pretrained_models/objectnav-rgb-clip.175M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/embclip/habitat-objectnav-rgb-clip.175M.pth
-curl -o pretrained_models/objectnav-rgb-imagenet.175M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/embclip/habitat-objectnav-rgb-imagenet.175M.pth
-curl -o pretrained_models/pointnav-rgb-clip.250M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/embclip/habitat-pointnav-rgb-clip.250M.pth
-curl -o pretrained_models/pointnav-rgb-imagenet.150M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/embclip/habitat-pointnav-rgb-imagenet.150M.pth
+curl -o pretrained_models/objectnav-rgb-clip.175M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/navigation/habitat-objectnav-rgb-clip.175M.pth
+curl -o pretrained_models/objectnav-rgb-imagenet.175M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/navigation/habitat-objectnav-rgb-imagenet.175M.pth
+curl -o pretrained_models/pointnav-rgb-clip.250M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/navigation/habitat-pointnav-rgb-clip.250M.pth
+curl -o pretrained_models/pointnav-rgb-imagenet.150M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/navigation/habitat-pointnav-rgb-imagenet.150M.pth
 ```
 
 ## Evaluation
