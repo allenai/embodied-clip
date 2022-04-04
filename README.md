@@ -79,13 +79,14 @@ You can also train agents with depth (replace `rgb` with `rgbd` in exp-config, f
 
 ## Pre-trained models
 
+We have provided (best validation) checkpoints for the CLIP and ImageNet agents listed in our paper.
+
 ```bash
 mkdir pretrained_models
-cd pretrained_models
-wget https://ai2-prior-embclip.s3.us-west-2.amazonaws.com/habitat-models/objectnav-rgb-clip.175M.pth
-wget https://ai2-prior-embclip.s3.us-west-2.amazonaws.com/habitat-models/objectnav-rgb-imagenet.175M.pth
-wget https://ai2-prior-embclip.s3.us-west-2.amazonaws.com/habitat-models/pointnav-rgb-clip.250M.pth
-wget https://ai2-prior-embclip.s3.us-west-2.amazonaws.com/habitat-models/pointnav-rgb-imagenet.150M.pth
+curl -o pretrained_models/objectnav-rgb-clip.175M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/embclip/habitat-objectnav-rgb-clip.175M.pth
+curl -o pretrained_models/objectnav-rgb-imagenet.175M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/embclip/habitat-objectnav-rgb-imagenet.175M.pth
+curl -o pretrained_models/pointnav-rgb-clip.250M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/embclip/habitat-pointnav-rgb-clip.250M.pth
+curl -o pretrained_models/pointnav-rgb-imagenet.150M.pth https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/embclip/habitat-pointnav-rgb-imagenet.150M.pth
 ```
 
 ## Evaluation
