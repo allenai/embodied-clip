@@ -10,6 +10,7 @@ We present competitive performance on navigation-heavy tasks in Embodied AI usin
   - [Habitat ObjectNav](#navigation-in-habitat) (Sec. 4.3)
   - [Habitat PointNav](#navigation-in-habitat) (Sec. 4.4)
 - [Probing for Navigational Primitives](#primitive-probing) (Sec. 5)
+- [ImageNet Acc vs. ObjectNav Success](#imagenet-vs-objectnav) (Sec. 6)
 - [Zero-shot ObjectNav in RoboTHOR](#zero-shot-objectnav) (Sec. 7)
 
 We have included forks of other repositories as branches of this repository, as we find this is a convenient way to centralize our experiments and track changes across codebases.
@@ -83,6 +84,17 @@ Use the ImageNet (`1-Phase ResNet50 IL`: [config](https://github.com/allenai/emb
 ## Navigation in Habitat
 
 Please refer to the README in the [habitat branch](https://github.com/allenai/embodied-clip/tree/habitat), which has detailed instructions on installing Habitat and training/evaluating our models.
+
+## ImageNet vs. ObjectNav
+
+For this experiment, we trained two RoboTHOR ObjectNav agents in addition to [those above](#robothor-objectnav).
+
+- ImageNet ResNet-18
+  - [Experiment Config](https://github.com/allenai/embodied-clip/blob/allenact/projects/objectnav_baselines/experiments/robothor/objectnav_robothor_rgb_resnet18gru_ddppo.py)
+  - [Model Checkpoint]()
+- CLIP ResNet-50x16
+  - [Experiment Config](https://github.com/allenai/embodied-clip/blob/allenact/projects/objectnav_baselines/experiments/robothor/clip/objectnav_robothor_rgb_clipresnet50x16gru_ddppo.py)
+  - [Model Checkpoint]()
 
 ## Primitive Probing
 
