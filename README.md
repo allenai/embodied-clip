@@ -2,9 +2,8 @@
 
 Official repository for [Simple but Effective: CLIP Embeddings for Embodied AI](https://arxiv.org/abs/2111.09888).
 
-We present competitive performance on navigation-heavy tasks in Embodied AI using frozen visual representations from [CLIP](https://github.com/openai/CLIP).
+We present competitive performance on navigation-heavy tasks in Embodied AI using frozen visual representations from [CLIP](https://github.com/openai/CLIP). This repository includes all code and pretrained models necessary to replicate the experiments in our paper:
 
-This repository includes all code and pretrained models necessary to replicate the experiments in our paper:
 - Baselines
   - [RoboTHOR ObjectNav](#robothor-objectnav) (Sec. 4.1)
   - [iTHOR Rearrangement](#ithor-rearrangement) (Sec. 4.2)
@@ -76,6 +75,10 @@ You can use these models with the `python allenact/main.py` arguments `-c pretra
 Simply append the `--eval` argument to the above `python allenact/main.py` commands.
 
 ## iTHOR Rearrangement
+
+Please refer to the README in the [rearrangement branch](https://github.com/allenai/embodied-clip/tree/rearrangement), which includes detailed instructions on installation, training, and testing.
+
+Use the ImageNet (`1-Phase ResNet50 IL`: [config](https://github.com/allenai/embodied-clip/blob/rearrangement/baseline_configs/one_phase/one_phase_rgb_resnet50_dagger.py), [weights](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBImageNetResNet50Dagger_40proc_aws0__stage_00__steps_000070075580.pt)) or CLIP (`1-Phase Embodied CLIP ResNet50 IL`: [config](https://github.com/allenai/embodied-clip/blob/rearrangement/baseline_configs/one_phase/one_phase_rgb_clipresnet50_dagger.py), [weights](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBClipResNet50Dagger_40proc__stage_00__steps_000065083050.pt)) models.
 
 ## Navigation in Habitat
 
