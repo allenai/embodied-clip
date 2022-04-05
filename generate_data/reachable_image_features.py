@@ -1,6 +1,7 @@
 import os
 from glob import glob
 from tqdm import tqdm
+import argparse
 
 from PIL import Image
 import numpy as np
@@ -11,8 +12,17 @@ from torchvision import models
 import clip
 
 
-image_list = glob('/home/apoorvk/nfs/clip-embodied-ai/datasets/reachable_objects/*.png')
-output_file = '/home/apoorvk/nfs/clip-embodied-ai/datasets/reachable_objects_ft.pt'
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_dir', type=str,
+                    default='data/CSR/edge_full',
+                    help='Path to CSR edge_full directory')
+parser.add_argument('--output_dir', type=str,
+                    default='data',
+                    help='Path output directory')
+args = parser.parse_args()
+
+image_list = glob(os.path.join(args.data_dir, '*.png'))
+output_file = os.path.join(args.output_dir, 'reachable_image_features.pt')
 
 ### Loading models
 
@@ -84,9 +94,9 @@ for image_path in tqdm(image_list):
     image_features[image_name] = {
         'rn50_imagenet_conv' : resnet_features_conv,
         'rn50_imagenet_avgpool' : resnet_features_avgpool,
-        'clip_conv' : clip_features_conv,
-        'clip_attnpool' : clip_features_attnpool,
-        'clip_avgpool' : clip_features_avgpool
+        'rn50_clip_conv' : clip_features_conv,
+        'rn50_clip_attnpool' : clip_features_attnpool,
+        'rn50_clip_avgpool' : clip_features_avgpool
     }
 
 torch.save(image_features, output_file)

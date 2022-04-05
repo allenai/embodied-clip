@@ -2,10 +2,18 @@ import os
 import json
 import pickle
 import random
+import argparse
 
 
-data_dir = '/home/apoorvk/nfs/clip-embodied-ai/datasets/pickupable_objects/edge_full'
-output_dir = '/home/apoorvk/nfs/clip-embodied-ai/datasets/pickupable_objects'
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_dir', type=str,
+                    default='data/CSR/edge_full',
+                    help='Path to CSR edge_full directory')
+parser.add_argument('--output_dir', type=str,
+                    default='data',
+                    help='Path output directory')
+args = parser.parse_args()
+
 
 def thor_id_to_class(thor_id):
     if '_' not in thor_id:
@@ -15,10 +23,10 @@ def thor_id_to_class(thor_id):
 
 object_superset = []
 for split in ['train', 'val', 'test']:
-    boxes_filepath = os.path.join(data_dir, f'{split}_boxes.json')
+    boxes_filepath = os.path.join(args.data_dir, f'{split}_boxes.json')
     with open(boxes_filepath) as f:
         boxes = json.load(f)
-    labels_filepath = os.path.join(data_dir, f'{split}_boxes_pickupable.json')
+    labels_filepath = os.path.join(args.data_dir, f'{split}_boxes_pickupable.json')
     with open(labels_filepath, 'r') as f:
         labels = json.load(f)
     data = []
@@ -29,11 +37,11 @@ object_superset = sorted(list(set(object_superset)))
 
 
 for split in ['train', 'val', 'test']:
-    boxes_filepath = os.path.join(data_dir, f'{split}_boxes.json')
+    boxes_filepath = os.path.join(args.data_dir, f'{split}_boxes.json')
     with open(boxes_filepath) as f:
         boxes = json.load(f)
 
-    labels_filepath = os.path.join(data_dir, f'{split}_boxes_pickupable.json')
+    labels_filepath = os.path.join(args.data_dir, f'{split}_boxes_pickupable.json')
     with open(labels_filepath, 'r') as f:
         labels = json.load(f)
 
@@ -41,10 +49,10 @@ for split in ['train', 'val', 'test']:
 
     for image in boxes.keys():
         objects = set([thor_id_to_class(o) for o in boxes[image].keys()])
-        pickupable_objects = set([thor_id_to_class(o) for o in labels[image]])
+        reachable_objects = set([thor_id_to_class(o) for o in labels[image]])
         for obj in objects:
             obj_id = object_superset.index(obj)
-            data[obj_id].append((image, obj_id, obj in pickupable_objects))
+            data[obj_id].append((image, obj_id, obj in reachable_objects))
 
     for i in range(111):
         positives = [d for d in data[i] if d[2] == 1]
@@ -60,5 +68,5 @@ for split in ['train', 'val', 'test']:
 
     pickle.dump(
         data_all,
-        open(os.path.join(output_dir, f"{split}.pkl"), 'wb')
+        open(os.path.join(args.output_dir, f"reachable_{split}.pkl"), 'wb')
     )

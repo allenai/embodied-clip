@@ -79,7 +79,13 @@ Simply append the `--eval` argument to the above `python allenact/main.py` comma
 
 Please refer to the README in the [rearrangement branch](https://github.com/allenai/embodied-clip/tree/rearrangement), which includes detailed instructions on installation, training, and testing.
 
-Use the ImageNet (`1-Phase ResNet50 IL`: [config](https://github.com/allenai/embodied-clip/blob/rearrangement/baseline_configs/one_phase/one_phase_rgb_resnet50_dagger.py), [weights](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBImageNetResNet50Dagger_40proc_aws0__stage_00__steps_000070075580.pt)) or CLIP (`1-Phase Embodied CLIP ResNet50 IL`: [config](https://github.com/allenai/embodied-clip/blob/rearrangement/baseline_configs/one_phase/one_phase_rgb_clipresnet50_dagger.py), [weights](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBClipResNet50Dagger_40proc__stage_00__steps_000065083050.pt)) models.
+Use the following models:
+- ImageNet (1-Phase ResNet50 IL)
+  - [Experiment config](https://github.com/allenai/embodied-clip/blob/rearrangement/baseline_configs/one_phase/one_phase_rgb_resnet50_dagger.py)
+  - [Model weights](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBImageNetResNet50Dagger_40proc_aws0__stage_00__steps_000070075580.pt)
+- CLIP (1-Phase Embodied CLIP ResNet50 IL)
+  - [Experiment config](https://github.com/allenai/embodied-clip/blob/rearrangement/baseline_configs/one_phase/one_phase_rgb_clipresnet50_dagger.py)
+  - [Model weights](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBClipResNet50Dagger_40proc__stage_00__steps_000065083050.pt)
 
 ## Navigation in Habitat
 
@@ -91,11 +97,13 @@ For this experiment, we trained two RoboTHOR ObjectNav agents in addition to [th
 
 - ImageNet ResNet-18
   - [Experiment Config](https://github.com/allenai/embodied-clip/blob/allenact/projects/objectnav_baselines/experiments/robothor/objectnav_robothor_rgb_resnet18gru_ddppo.py)
-  - [Model Checkpoint]()
+  - [Model Checkpoint](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/navigation/exp_Objectnav-RoboTHOR-RGB-ResNet18GRU-DDPPO__stage_00__steps_000180222019.pt)
 - CLIP ResNet-50x16
   - [Experiment Config](https://github.com/allenai/embodied-clip/blob/allenact/projects/objectnav_baselines/experiments/robothor/clip/objectnav_robothor_rgb_clipresnet50x16gru_ddppo.py)
-  - [Model Checkpoint]()
+  - [Model Checkpoint](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/navigation/exp_Objectnav-RoboTHOR-RGB-ClipResNet50x16GRU-DDPPO__stage_00__steps_000160088907.pt)
 
 ## Primitive Probing
+
+https://prior-datasets.s3.us-east-2.amazonaws.com/embclip/ithor_scenes.tar.gz
 
 ## Zero-shot ObjectNav

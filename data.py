@@ -9,23 +9,23 @@ import pytorch_lightning as pl
 class THOREmbeddingsDataset(Dataset):
     def __init__(self, data_dir, split, embedding_type, prediction_type):
 
-        assert embedding_type in ['rn50_imagenet_conv', 'rn50_imagenet_avgpool', 'clip_conv', 'clip_attnpool', 'clip_avgpool']
-        assert prediction_type in ['object_presence', 'object_presence_grid', 'valid_moves_forward', 'pickupable_objects']
+        assert embedding_type in ['rn50_imagenet_conv', 'rn50_imagenet_avgpool', 'rn50_clip_conv', 'rn50_clip_attnpool', 'rn50_clip_avgpool']
+        assert prediction_type in ['object_presence', 'object_presence_grid', 'valid_moves_forward', 'reachable_objects']
 
-        if prediction_type == 'pickupable_objects':
-            image_features = torch.load(os.path.join(data_dir, f"image_features.pt"))
-            data = pickle.load(open(os.path.join(data_dir, f"{split}.pkl"), 'rb'))
+        if prediction_type == 'reachable_objects':
+            image_features = torch.load(os.path.join(data_dir, f"reachable_image_features.pt"))
+            data = pickle.load(open(os.path.join(data_dir, f"reachable_{split}.pkl"), 'rb'))
             self.embeddings = []
             self.predictions = []
 
-            for image, obj, pickupable in data:
+            for image, obj, reachable in data:
                 self.embeddings.append(image_features[image][embedding_type])
                 self.predictions.append((
                     obj,
-                    torch.tensor(pickupable, dtype=int)
+                    torch.tensor(reachable, dtype=int)
                 ))
         else:
-            data = torch.load(os.path.join(data_dir, f"{split}.pt"))
+            data = torch.load(os.path.join(data_dir, f"thor_{split}.pt"))
 
             if prediction_type == 'valid_moves_forward_cls':
                 prediction_type = 'valid_moves_forward'

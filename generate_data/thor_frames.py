@@ -10,10 +10,15 @@ from ai2thor.controller import Controller
 from constants import target_objects
 
 
-output_dir = os.path.expanduser('~/nfs/clip-embodied-ai/datasets/ithor_scenes')
-os.makedirs(os.path.join(output_dir, 'train'), exist_ok=True)
-os.makedirs(os.path.join(output_dir, 'val'), exist_ok=True)
-os.makedirs(os.path.join(output_dir, 'test'), exist_ok=True)
+parser = argparse.ArgumentParser()
+parser.add_argument('--output_dir', type=str,
+                    default='data/ithor_scenes',
+                    help='Path output directory')
+args = parser.parse_args()
+
+os.makedirs(os.path.join(args.output_dir, 'train'), exist_ok=True)
+os.makedirs(os.path.join(args.output_dir, 'val'), exist_ok=True)
+os.makedirs(os.path.join(args.output_dir, 'test'), exist_ok=True)
 
 
 controller = Controller(
@@ -95,4 +100,4 @@ for scene_name in scenes:
             'valid_moves_forward' : valid_moves_forward
         })
 
-    np.save(os.path.join(output_dir, split, f"{scene_name}.npy"), data)
+    np.save(os.path.join(args.output_dir, split, f"{scene_name}.npy"), data)
