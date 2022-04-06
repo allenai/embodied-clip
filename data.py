@@ -9,10 +9,25 @@ import pytorch_lightning as pl
 class THOREmbeddingsDataset(Dataset):
     def __init__(self, data_dir, split, embedding_type, prediction_type):
 
-        assert embedding_type in ['rn50_imagenet_conv', 'rn50_imagenet_avgpool', 'rn50_clip_conv', 'rn50_clip_attnpool', 'rn50_clip_avgpool']
-        assert prediction_type in ['object_presence', 'object_presence_grid', 'valid_moves_forward', 'reachable_objects']
+        assert embedding_type in ['imagenet_avgpool', 'clip_avgpool', 'clip_attnpool']
+        assert prediction_type in ['object_presence', 'object_localization', 'reachability', 'free_space']
 
-        if prediction_type == 'reachable_objects':
+        if prediction_type in ['object_presence', 'object_localization', 'free_space']:
+            if prediction_type == 'object_localization':
+                assert embedding_type in ['imagenet_avgpool', 'clip_avgpool']
+                if embedding_type == 'imagenet_avgpool': embedding_type = 'imagenet_conv'
+                elif embedding_type == 'clip_avgpool': embedding_type = 'clip_conv'
+
+            data = torch.load(os.path.join(data_dir, f"thor_{split}.pt"))
+
+            self.embeddings = []
+            self.predictions = []
+            for scene_name, frames in data.items():
+                for frame_features in frames:
+                    self.embeddings.append(frame_features[embedding_type])
+                    self.predictions.append(frame_features[prediction_type])
+
+        elif prediction_type == 'reachability':
             image_features = torch.load(os.path.join(data_dir, f"reachable_image_features.pt"))
             data = pickle.load(open(os.path.join(data_dir, f"reachable_{split}.pkl"), 'rb'))
             self.embeddings = []
@@ -24,18 +39,6 @@ class THOREmbeddingsDataset(Dataset):
                     obj,
                     torch.tensor(reachable, dtype=int)
                 ))
-        else:
-            data = torch.load(os.path.join(data_dir, f"thor_{split}.pt"))
-
-            if prediction_type == 'valid_moves_forward_cls':
-                prediction_type = 'valid_moves_forward'
-
-            self.embeddings = []
-            self.predictions = []
-            for scene_name, frames in data.items():
-                for frame_features in frames:
-                    self.embeddings.append(frame_features[embedding_type])
-                    self.predictions.append(frame_features[prediction_type])
 
     def __getitem__(self, index):
         return self.embeddings[index], self.predictions[index]

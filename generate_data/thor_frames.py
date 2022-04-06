@@ -3,6 +3,7 @@
 import os
 import cv2
 import random
+import argparse
 
 import numpy as np
 from ai2thor.controller import Controller

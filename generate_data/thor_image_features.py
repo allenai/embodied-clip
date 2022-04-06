@@ -1,5 +1,6 @@
 import os
 from glob import glob
+import argparse
 
 from PIL import Image
 import numpy as np
@@ -126,14 +127,14 @@ for split in ['train', 'val', 'test']:
             )
 
             features[scene_name].append({
-                'rn50_imagenet_conv' : resnet_features_conv,
-                'rn50_imagenet_avgpool' : resnet_features_avgpool,
-                'rn50_clip_conv' : clip_features_conv,
-                'rn50_clip_attnpool' : clip_features_attnpool,
-                'rn50_clip_avgpool' : clip_features_avgpool,
+                'imagenet_conv' : resnet_features_conv,
+                'imagenet_avgpool' : resnet_features_avgpool,
+                'clip_conv' : clip_features_conv,
+                'clip_attnpool' : clip_features_attnpool,
+                'clip_avgpool' : clip_features_avgpool,
                 'object_presence' : object_presence,
-                'object_presence_grid' : object_presence_grid,
-                'valid_moves_forward' : point['valid_moves_forward']
+                'object_localization' : object_presence_grid,
+                'free_space' : point['valid_moves_forward']
             })
 
     torch.save(features, os.path.join(args.output_dir, f"thor_{split}.pt"))

@@ -1,0 +1,23 @@
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - cudatoolkit=11.0
+  - pytorch=1.7.1
+  - torchvision=0.8.2
+  - ca-certificates=2021.10.8
+  - openssl=3.0.2
+  - setuptools=59.5.0
+  - pip=22.0.4
+  - pip:
+    - argparse==1.4.0
+    - numpy==1.21.5
+    - Pillow==9.0.1
+    - ftfy==6.1.1
+    - regex==2022.3.15
+    - tqdm==4.64.0
+    - clip @ git+https://github.com/openai/CLIP.git@40f5484c1c74edd83cb9cf687c6ab92b28d8b656
+    - pytorch-lightning==1.5.10

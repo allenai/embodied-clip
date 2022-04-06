@@ -92,11 +92,9 @@ for image_path in tqdm(image_list):
     clip_features_avgpool = clip_avgpool(clip_features.float())[0].cpu()
 
     image_features[image_name] = {
-        'rn50_imagenet_conv' : resnet_features_conv,
-        'rn50_imagenet_avgpool' : resnet_features_avgpool,
-        'rn50_clip_conv' : clip_features_conv,
-        'rn50_clip_attnpool' : clip_features_attnpool,
-        'rn50_clip_avgpool' : clip_features_avgpool
+        'imagenet_avgpool' : resnet_features_avgpool,
+        'clip_avgpool' : clip_features_avgpool,
+        'clip_attnpool' : clip_features_attnpool
     }
 
 torch.save(image_features, output_file)

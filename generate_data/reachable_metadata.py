@@ -22,19 +22,18 @@ def thor_id_to_class(thor_id):
 
 
 object_superset = []
+
 for split in ['train', 'val', 'test']:
     boxes_filepath = os.path.join(args.data_dir, f'{split}_boxes.json')
     with open(boxes_filepath) as f:
         boxes = json.load(f)
-    labels_filepath = os.path.join(args.data_dir, f'{split}_boxes_pickupable.json')
-    with open(labels_filepath, 'r') as f:
-        labels = json.load(f)
+
     data = []
     for image in boxes.keys():
         for o in boxes[image].keys():
             object_superset.append(thor_id_to_class(o))
-object_superset = sorted(list(set(object_superset)))
 
+object_superset = sorted(list(set(object_superset)))
 
 for split in ['train', 'val', 'test']:
     boxes_filepath = os.path.join(args.data_dir, f'{split}_boxes.json')
@@ -45,7 +44,7 @@ for split in ['train', 'val', 'test']:
     with open(labels_filepath, 'r') as f:
         labels = json.load(f)
 
-    data = [[] for i in range(111)]
+    data = [[] for i in range(len(object_superset))]
 
     for image in boxes.keys():
         objects = set([thor_id_to_class(o) for o in boxes[image].keys()])
@@ -54,14 +53,14 @@ for split in ['train', 'val', 'test']:
             obj_id = object_superset.index(obj)
             data[obj_id].append((image, obj_id, obj in reachable_objects))
 
-    for i in range(111):
+    for i in range(len(object_superset)):
         positives = [d for d in data[i] if d[2] == 1]
         negatives = [d for d in data[i] if d[2] == 0][:len(positives)]
         class_data = negatives + positives
         data[i] = class_data
 
     data_all = []
-    for i in range(111):
+    for i in range(len(object_superset)):
         for j in data[i]:
             data_all.append(j)
     random.shuffle(data_all)
