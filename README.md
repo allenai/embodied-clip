@@ -15,6 +15,8 @@ We present competitive performance on navigation-heavy tasks in Embodied AI usin
 
 We have included forks of other repositories as branches of this repository, as we find this is a convenient way to centralize our experiments and track changes across codebases.
 
+---
+
 ## RoboTHOR ObjectNav
 
 ### Installation
@@ -75,6 +77,8 @@ You can use these models with the `python allenact/main.py` arguments `-c pretra
 
 Simply append the `--eval` argument to the above `python allenact/main.py` commands.
 
+---
+
 ## iTHOR Rearrangement
 
 Please refer to the README in the [rearrangement branch](https://github.com/allenai/embodied-clip/tree/rearrangement), which includes detailed instructions on installation, training, and testing.
@@ -87,9 +91,13 @@ Use the following models:
   - [Experiment config](https://github.com/allenai/embodied-clip/blob/rearrangement/baseline_configs/one_phase/one_phase_rgb_clipresnet50_dagger.py)
   - [Model weights](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/rearrangement/one-phase/exp_OnePhaseRGBClipResNet50Dagger_40proc__stage_00__steps_000065083050.pt)
 
+---
+
 ## Navigation in Habitat
 
 Please refer to the README in the [habitat branch](https://github.com/allenai/embodied-clip/tree/habitat), which has detailed instructions on installing Habitat and training/evaluating our models.
+
+---
 
 ## ImageNet vs. ObjectNav
 
@@ -101,6 +109,8 @@ For this experiment, we trained two RoboTHOR ObjectNav agents in addition to [th
 - CLIP ResNet-50x16
   - [Experiment Config](https://github.com/allenai/embodied-clip/blob/allenact/projects/objectnav_baselines/experiments/robothor/clip/objectnav_robothor_rgb_clipresnet50x16gru_ddppo.py)
   - [Model Checkpoint](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/navigation/exp_Objectnav-RoboTHOR-RGB-ClipResNet50x16GRU-DDPPO__stage_00__steps_000160088907.pt)
+
+---
 
 ## Primitive Probing
 
@@ -140,7 +150,7 @@ PYTHONPATH=. python generate_data/reachable_metadata.py --data_dir data/CSR/edge
 PYTHONPATH=. python generate_data/reachable_image_features.py --data_dir data/CSR/edge_full --output_dir data
 ```
 
-## Training models
+### Training models
 
 After preparing the data, you can train any of the models in our paper with the following code:
 
@@ -151,9 +161,14 @@ export EMB_TYPE=clip_avgpool
 export PRED_TYPE=object_presence
 
 python train.py --data-dir data --log-dir logs --embedding-type $EMB_TYPE --prediction-type $PRED_TYPE --gpus 1
+```
 
-# To view generated training/testing logs
+To view training/testing logs from our runs:
+
+```bash
 tensorboard --logdir logs
 ```
+
+---
 
 ## Zero-shot ObjectNav
