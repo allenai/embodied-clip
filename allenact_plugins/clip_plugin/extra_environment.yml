@@ -3,7 +3,7 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - pytorch>=1.7.1
+  - pytorch=1.7.1
   - torchvision
   - pip:
       - ftfy
