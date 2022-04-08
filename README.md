@@ -31,6 +31,7 @@ export EMBCLIP_ENV_NAME=embclip-allenact
 export CONDA_BASE="$(dirname $(dirname "${CONDA_EXE}"))"
 export PIP_SRC="${CONDA_BASE}/envs/${EMBCLIP_ENV_NAME}/pipsrc"
 conda env create --file ./conda/environment-base.yml --name $EMBCLIP_ENV_NAME
+conda activate $EMBCLIP_ENV_NAME
 
 # Install the appropriate cudatoolkit
 conda env update --file ./conda/environment-<CUDA_VERSION>.yml --name $EMBCLIP_ENV_NAME
