@@ -173,3 +173,20 @@ tensorboard --logdir logs
 ---
 
 ## Zero-shot ObjectNav
+
+We have [modified](https://github.com/allenai/embodied-clip/compare/allenact...zeroshot-objectnav) the RoboTHOR ObjectNav codebase ([above](#robothor-objectnav)) to enable the zero-shot experiment in our paper.
+
+To install, please follow the instructions for RoboTHOR ObjectNav, but instead clone the [`zeroshot-objectnav` branch](https://github.com/allenai/embodied-clip/tree/zeroshot-objectnav):
+
+```bash
+git clone -b zeroshot-objectnav --single-branch git@github.com:allenai/embodied-clip.git embclip-zeroshot
+cd embclip-zeroshot
+
+...
+```
+
+To train the model in our paper:
+
+```
+PYTHONPATH=. python allenact/main.py -o storage/embclip-zeroshot -b projects/objectnav_baselines/experiments/robothor/clip zeroshot_objectnav_robothor_rgb_clipresnet50gru_ddppo
+```
