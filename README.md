@@ -103,7 +103,7 @@ Our 2022 AI2-THOR Rearrangement Challenge has several upgrades distinguishing it
 
 To begin, clone this repository locally
 ```bash
-git clone git@github.com:allenai/ai2thor-rearrangement.git
+git clone -b rearrangement --single-branch git@github.com:allenai/embodied-clip.git embclip-rearrangement
 ```
 <details>
 <summary><b>See here for a summary of the most important files/directories in this repository</b> </summary> 
@@ -150,7 +150,7 @@ pip install -r requirements.txt
 ```
 or, if you prefer using conda, we can create a `thor-rearrange` environment with our requirements by running
 ```bash
-export MY_ENV_NAME=thor-rearrange
+export MY_ENV_NAME=embclip-rearrange
 export CONDA_BASE="$(dirname $(dirname "${CONDA_EXE}"))"
 export PIP_SRC="${CONDA_BASE}/envs/${MY_ENV_NAME}/pipsrc"
 conda env create --file environment.yml --name $MY_ENV_NAME
