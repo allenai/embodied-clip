@@ -156,10 +156,10 @@ export PIP_SRC="${CONDA_BASE}/envs/${MY_ENV_NAME}/pipsrc"
 conda env create --file environment.yml --name $MY_ENV_NAME
 ```
 <details>
-<summary> <b> Why not just run <code>conda env create --file environment.yml --name thor-rearrange</code> by itself? </b></summary> 
+<summary> <b> Why not just run <code>conda env create --file environment.yml --name embclip-rearrange</code> by itself? </b></summary> 
 <p>
 
-If you were to run `conda env create --file environment.yml --name thor-rearrange` nothing would break
+If you were to run `conda env create --file environment.yml --name embclip-rearrange` nothing would break
 but we have some pip requirements in our `environment.yml` file and, by default, these are saved in 
 a local `./src` directory. By explicitly specifying the `PIP_SRC` variable we can have it place these
  pip-installed packages in a nicer (more hidden) location.
