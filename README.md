@@ -148,7 +148,7 @@ You can then install requirements by running
 ```bash
 pip install -r requirements.txt
 ```
-or, if you prefer using conda, we can create a `thor-rearrange` environment with our requirements by running
+or, if you prefer using conda, we can create a `embclip-rearrange` environment with our requirements by running
 ```bash
 export MY_ENV_NAME=embclip-rearrange
 export CONDA_BASE="$(dirname $(dirname "${CONDA_EXE}"))"
