@@ -48,27 +48,37 @@ class ClipResNetPreprocessor(Preprocessor):
         rgb_input_uuid: str,
         clip_model_type: str,
         pool: bool,
+        pooling_type: Optional[str] = None,
         device: Optional[torch.device] = None,
         device_ids: Optional[List[torch.device]] = None,
         **kwargs: Any,
     ):
         assert clip_model_type in clip.available_models()
 
-        if clip_model_type == "RN50":
-            output_shape = (2048, 7, 7)
-        elif clip_model_type == "RN50x16":
-            output_shape = (3072, 7, 7)
-        else:
+        self.clip_model_type = clip_model_type
+        self.pool = pool
+        self.pooling_type = pooling_type
+
+        if clip_model_type not in ['RN50', 'RN50x16']:
             raise NotImplementedError(
                 f"Currently `clip_model_type` must be one of 'RN50' or 'RN50x16'"
             )
 
-        if pool:
-            output_shape = output_shape[:1]
-
-        self.clip_model_type = clip_model_type
-
-        self.pool = pool
+        if pool is False:
+            if clip_model_type == "RN50":
+                output_shape = (2048, 7, 7)
+            elif clip_model_type == "RN50x16":
+                output_shape = (3072, 7, 7)
+        elif pooling_type == 'avg':
+            if clip_model_type == "RN50":
+                output_shape = (2048,)
+            elif clip_model_type == "RN50x16":
+                output_shape = (3072,)
+        elif pooling_type == 'attn':
+            if clip_model_type == "RN50":
+                output_shape = (1024,)
+            elif clip_model_type == "RN50x16":
+                output_shape = (768,)
 
         self.device = torch.device("cpu") if device is None else device
         self.device_ids = device_ids or cast(
@@ -93,7 +103,8 @@ class ClipResNetPreprocessor(Preprocessor):
     def resnet(self) -> ClipResNetEmbedder:
         if self._resnet is None:
             self._resnet = ClipResNetEmbedder(
-                clip.load(self.clip_model_type, device=self.device)[0], pool=self.pool
+                clip.load(self.clip_model_type, device=self.device)[0],
+                pool=self.pool, pooling_type=self.pooling_type
             ).to(self.device)
             for module in self._resnet.modules():
                 if "BatchNorm" in type(module).__name__:

@@ -26,6 +26,7 @@ class ZeroshotClipResNetPreprocessGRUActorCriticMixin:
     screen_size: int = attr.ib()
     goal_sensor_type: Type[Sensor] = attr.ib()
     pool: bool = attr.ib(default=False)
+    pooling_type: str = attr.ib()
     target_types: List[str] = attr.ib()
 
 
@@ -55,6 +56,7 @@ class ZeroshotClipResNetPreprocessGRUActorCriticMixin:
                 rgb_input_uuid=rgb_sensor.uuid,
                 clip_model_type=self.clip_model_type,
                 pool=self.pool,
+                pooling_type=self.pooling_type,
                 output_uuid="rgb_clip_resnet"
             ),
             ClipTextPreprocessor(
@@ -77,7 +79,7 @@ class ZeroshotClipResNetPreprocessGRUActorCriticMixin:
             action_space=gym.spaces.Discrete(num_actions),
             observation_space=kwargs["sensor_preprocessor_graph"].observation_spaces,
             goal_sensor_uuid=goal_sensor_uuid,
-            hidden_size=512,
+            hidden_size=1024,
             clip_rgb_preprocessor_uuid='rgb_clip_resnet',
             clip_text_preprocessor_uuid='goal_object_clip',
             clip_embedding_dim = 1024

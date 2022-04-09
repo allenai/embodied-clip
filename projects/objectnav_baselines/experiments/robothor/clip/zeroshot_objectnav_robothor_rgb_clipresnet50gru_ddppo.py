@@ -53,6 +53,8 @@ class ZeroshotObjectNavRoboThorClipRGBPPOExperimentConfig(
             clip_model_type=self.CLIP_MODEL_TYPE,
             screen_size=self.SCREEN_SIZE,
             goal_sensor_type=GoalObjectTypeThorSensor,
+            pool=True,
+            pooling_type='attn',
             target_types=self.TARGET_TYPES
         )
 

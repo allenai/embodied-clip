@@ -21,7 +21,7 @@ class CLIPZeroshotNavActorCritic(VisualNavActorCritic):
         self,
         action_space: gym.spaces.Discrete,
         observation_space: SpaceDict,
-        hidden_size=512,
+        hidden_size=1024,
     ):
         super().__init__(
             action_space=action_space,
@@ -41,12 +41,12 @@ class CLIPZeroshotNavActorCritic(VisualNavActorCritic):
     ) -> Tuple[ActorCriticOutput[DistributionType], Optional[Memory]]:
 
         # 1.1 use perception model (i.e. encoder) to get observation embeddings
-        vis_embeds = self.visual_forward_encoder(observations)
+        vis_embeds, goal_embeds = self.forward_encoder(observations)
 
         # 2. use RNNs to get single/multiple beliefs
         belief, rnn_hidden_states = self.state_encoders['single_belief'](
             vis_embeds,
-            memory.tensor(key),
+            memory.tensor('single_belief'),
             masks
         )
         beliefs_dict = { 'single_belief': belief }
@@ -55,13 +55,7 @@ class CLIPZeroshotNavActorCritic(VisualNavActorCritic):
         # 3. fuse beliefs for multiple belief models
         beliefs, task_weights = self.fuse_beliefs(beliefs_dict, None)
 
-        goal_embeds = self.goal_forward_encoder(observations)
-
-        print(vis_embeds.shape)
-        print(beliefs.shape)
-        print(goal_embeds.shape)
-
-        output = (obs_embeds + beliefs) * goal_embeds
+        output = (vis_embeds + beliefs) * goal_embeds
 
         # 4. prepare output
         actor_critic_output = ActorCriticOutput(
@@ -72,21 +66,19 @@ class CLIPZeroshotNavActorCritic(VisualNavActorCritic):
 
         return actor_critic_output, memory
 
-    def visual_forward_encoder(self, observations: ObservationType) -> torch.FloatTensor:
+    def forward_encoder(self, observations: ObservationType) -> torch.FloatTensor:
         raise NotImplementedError("Obs Encoder Not Implemented")
 
-    def goal_forward_encoder(self, observations: ObservationType) -> torch.FloatTensor:
-        raise NotImplementedError("Goal Encoder Not Implemented")
 
-
-class CLIPZeroshotObjectNavActorCritic(VisualNavActorCritic):
+class CLIPZeroshotObjectNavActorCritic(CLIPZeroshotNavActorCritic):
     def __init__(
         # base params
         self,
         action_space: gym.spaces.Discrete,
         observation_space: SpaceDict,
         goal_sensor_uuid: str,
-        hidden_size=512,
+        # RNN
+        hidden_size=1024,
         num_rnn_layers=1,
         rnn_type="GRU",
         add_prev_actions=False,
@@ -130,8 +122,5 @@ class CLIPZeroshotObjectNavActorCritic(VisualNavActorCritic):
     def is_blind(self) -> bool:
         return False
 
-    def visual_forward_encoder(self, observations: ObservationType) -> torch.FloatTensor:
-        return self.observations[self.clip_rgb_preprocessor_uuid]
-
-    def goal_forward_encoder(self, observations: ObservationType) -> torch.FloatTensor:
-        return self.observations[self.clip_text_preprocessor_uuid]
+    def forward_encoder(self, observations: ObservationType) -> torch.FloatTensor:
+        return observations[self.clip_rgb_preprocessor_uuid], observations[self.clip_text_preprocessor_uuid]
