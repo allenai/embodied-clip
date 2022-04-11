@@ -185,8 +185,16 @@ cd embclip-zeroshot
 ...
 ```
 
-To train the model in our paper:
+### Training
 
 ```
 PYTHONPATH=. python allenact/main.py -o storage/embclip-zeroshot -b projects/objectnav_baselines/experiments/robothor/clip zeroshot_objectnav_robothor_rgb_clipresnet50gru_ddppo
+```
+
+### Evaluating
+
+We run the same experiment config in eval mode, but with the original set of 12 object types.
+
+```
+PYTHONPATH=. python allenact/main.py -o storage/embclip-zeroshot -b projects/objectnav_baselines/experiments/robothor/clip zeroshot_objectnav_robothor_rgb_clipresnet50gru_ddppo_eval --eval
 ```
