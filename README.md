@@ -15,6 +15,18 @@ We present competitive performance on navigation-heavy tasks in Embodied AI usin
 
 We have included forks of other repositories as branches of this repository, as we find this is a convenient way to centralize our experiments and track changes across codebases.
 
+## Citation
+
+```
+@inproceedings{khandelwal2022:embodied-clip,
+   author    = {Khandelwal, Apoorv and Weihs, Luca and Mottaghi, Roozbeh and Kembhavi, Aniruddha},
+   title     = {Simple but Effective: CLIP Embeddings for Embodied AI},
+   booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+   month     = {June},
+   year      = {2022}
+}
+```
+
 ---
 
 ## RoboTHOR ObjectNav
