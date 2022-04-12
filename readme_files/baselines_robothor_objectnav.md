@@ -1,6 +1,7 @@
-## RoboTHOR ObjectNav
+RoboTHOR ObjectNav
+==============================
 
-### Installation
+## Installation
 
 We've included instructions for installing the full AllenAct library (modifiable) with conda for [our branch](https://github.com/allenai/embodied-clip/tree/allenact), although you can also use the [official AllenAct repo (v0.5.0)](https://github.com/allenai/allenact/tree/v0.5.0) or perhaps newer.
 
@@ -33,7 +34,7 @@ python -c "import clip; clip.load('RN50')"
 
 Please refer to the [official AllenAct installation instructions](https://allenact.org/installation/installation-allenact) for more details.
 
-### Training
+## Training
 
 ```bash
 # ImageNet
@@ -43,7 +44,7 @@ PYTHONPATH=. python allenact/main.py -o storage/objectnav-robothor-rgb-imagenet-
 PYTHONPATH=. python allenact/main.py -o storage/objectnav-robothor-rgb-clip-rn50 -b projects/objectnav_baselines/experiments/robothor/clip objectnav_robothor_rgb_clipresnet50gru_ddppo
 ```
 
-### Using pretrained models
+## Using pretrained models
 
 ```bash
 # ImageNet
@@ -55,6 +56,6 @@ curl -o pretrained_model_ckpts/objectnav-robothor-clip-rn50.130M.pt https://prio
 
 You can use these models with the `python allenact/main.py` arguments `-c pretrained_model_ckpts/objectnav-robothor-imagenet-rn50.195M.pt` or `-c pretrained_model_ckpts/objectnav-robothor-clip-rn50.130M.pt`.
 
-### Evaluating 
+## Evaluating 
 
 Simply append the `--eval` argument to the above `python allenact/main.py` commands.

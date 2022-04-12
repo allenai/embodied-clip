@@ -1,8 +1,9 @@
-## Primitive Probing
+Primitive Probing
+==============================
 
 The code present in the `main` branch can be used to replicate our experiments for probing semantic and geometric navigational primitives with linear classifiers.
 
-### Installation
+## Installation
 
 ```bash
 git clone --single-branch git@github.com:allenai/embodied-clip.git
@@ -15,7 +16,7 @@ python -c "from torchvision import models; models.resnet50(pretrained=True)"
 python -c "import clip; clip.load('RN50')"
 ```
 
-### Preparing data
+## Preparing data
 
 ```bash
 mkdir data
@@ -37,7 +38,7 @@ PYTHONPATH=. python generate_data/reachable_metadata.py --data_dir data/CSR/edge
 PYTHONPATH=. python generate_data/reachable_image_features.py --data_dir data/CSR/edge_full --output_dir data
 ```
 
-### Training models
+## Training models
 
 After preparing the data, you can train any of the models in our paper with the following code:
 

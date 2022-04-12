@@ -1,4 +1,5 @@
-## iTHOR Rearrangement
+iTHOR Rearrangement
+==============================
 
 Please refer to the README in the [rearrangement branch](https://github.com/allenai/embodied-clip/tree/rearrangement), which includes detailed instructions on installation, training, and testing.
 

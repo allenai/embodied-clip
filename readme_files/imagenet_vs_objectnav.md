@@ -1,4 +1,5 @@
-## ImageNet vs. ObjectNav
+ImageNet vs. ObjectNav
+==============================
 
 For this experiment, we trained two additional [RoboTHOR ObjectNav](baselines_robothor_objectnav.md) agents.
 
