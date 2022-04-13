@@ -13,7 +13,7 @@ dependencies:
   - gitpython
   - ipython
   - markdown=3.3
-  - matplotlib>=3.3.1
+  - matplotlib=3.3.1
   - mypy
   - networkx
   - numpy>=1.19.1
