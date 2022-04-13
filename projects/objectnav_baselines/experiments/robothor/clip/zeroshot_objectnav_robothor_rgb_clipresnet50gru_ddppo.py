@@ -30,22 +30,24 @@ class ZeroshotObjectNavRoboThorClipRGBPPOExperimentConfig(
 
     CLIP_MODEL_TYPE = "RN50"
 
-    SENSORS = [
-        RGBSensorThor(
-            height=ZeroshotObjectNavRoboThorBaseConfig.SCREEN_SIZE,
-            width=ZeroshotObjectNavRoboThorBaseConfig.SCREEN_SIZE,
-            use_resnet_normalization=True,
-            mean=ClipResNetPreprocessor.CLIP_RGB_MEANS,
-            stdev=ClipResNetPreprocessor.CLIP_RGB_STDS,
-            uuid="rgb_lowres",
-        ),
-        GoalObjectTypeThorSensor(
-            object_types=ZeroshotObjectNavRoboThorBaseConfig.TARGET_TYPES,
-            uuid="goal_object_type_ind",
-        ),
-    ]
+    SENSORS = []
 
     def __init__(self, **kwargs):
+        self.SENSORS = [
+            RGBSensorThor(
+                height=ZeroshotObjectNavRoboThorBaseConfig.SCREEN_SIZE,
+                width=ZeroshotObjectNavRoboThorBaseConfig.SCREEN_SIZE,
+                use_resnet_normalization=True,
+                mean=ClipResNetPreprocessor.CLIP_RGB_MEANS,
+                stdev=ClipResNetPreprocessor.CLIP_RGB_STDS,
+                uuid="rgb_lowres",
+            ),
+            GoalObjectTypeThorSensor(
+                object_types=self.TARGET_TYPES,
+                uuid="goal_object_type_ind",
+            ),
+        ]
+
         super().__init__(**kwargs)
 
         self.preprocessing_and_model = ZeroshotClipResNetPreprocessGRUActorCriticMixin(
