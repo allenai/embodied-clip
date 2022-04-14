@@ -44,6 +44,7 @@ class ObjectNavThorBaseConfig(ObjectNavBaseConfig, ABC):
     """The base config for all AI2-THOR ObjectNav experiments."""
 
     DEFAULT_NUM_TRAIN_PROCESSES: Optional[int] = None
+    DEFAULT_NUM_TEST_PROCESSES: Optional[int] = None
     DEFAULT_TRAIN_GPU_IDS = tuple(range(torch.cuda.device_count()))
     DEFAULT_VALID_GPU_IDS = (torch.cuda.device_count() - 1,)
     DEFAULT_TEST_GPU_IDS = (torch.cuda.device_count() - 1,)
@@ -81,7 +82,7 @@ class ObjectNavThorBaseConfig(ObjectNavBaseConfig, ABC):
             num_train_processes, self.DEFAULT_NUM_TRAIN_PROCESSES
         )
         self.num_test_processes = v_or_default(
-            num_test_processes, (10 if torch.cuda.is_available() else 1)
+            num_test_processes, self.DEFAULT_NUM_TEST_PROCESSES
         )
         self.test_on_validation = test_on_validation
         self.train_gpu_ids = v_or_default(train_gpu_ids, self.DEFAULT_TRAIN_GPU_IDS)

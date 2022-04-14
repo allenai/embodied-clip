@@ -21,3 +21,7 @@ class EvalZeroshotObjectNavRoboThorClipRGBPPOExperimentConfig(ZeroshotObjectNavR
             ]
         )
     )
+
+    # Eval on validation set instead
+    DEFAULT_NUM_TEST_PROCESSES = 15
+    TEST_DATASET_DIR = None
