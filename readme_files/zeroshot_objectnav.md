@@ -19,8 +19,10 @@ PYTHONPATH=. python allenact/main.py -o storage/embclip-zeroshot -b projects/obj
 
 ### Evaluating
 
-We run the same experiment config in eval mode, but with the original set of 12 object types.
+We run the same experiment config in eval mode (for validation), but with the original set of 12 object types.
 
 ```
 PYTHONPATH=. python allenact/main.py -o storage/embclip-zeroshot -b projects/objectnav_baselines/experiments/robothor/clip zeroshot_objectnav_robothor_rgb_clipresnet50gru_ddppo_eval --eval
 ```
+
+We provide the weights for the model in our paper [here](https://prior-model-weights.s3.us-east-2.amazonaws.com/embodied-ai/navigation/exp_Zeroshot-ObjectNav-RoboTHOR-RGB-ClipResNet50GRU-DDPPO__stage_00__steps_000055057640.pt).
