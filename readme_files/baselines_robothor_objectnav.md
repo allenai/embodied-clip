@@ -6,7 +6,7 @@ RoboTHOR ObjectNav
 We've included instructions for installing the full AllenAct library (modifiable) with conda for [our branch](https://github.com/allenai/embodied-clip/tree/allenact), although you can also use the [official AllenAct repo (v0.5.0)](https://github.com/allenai/allenact/tree/v0.5.0) or perhaps newer.
 
 ```bash
-git clone -b allenact --single-branch git@github.com:allenai/embodied-clip.git embclip-allenact
+git clone -b allenact --single-branch https://github.com/allenai/embodied-clip.git embclip-allenact
 cd embclip-allenact
 
 export EMBCLIP_ENV_NAME=embclip-allenact

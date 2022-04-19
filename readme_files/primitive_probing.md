@@ -6,7 +6,7 @@ The code present in the `main` branch can be used to replicate our experiments f
 ## Installation
 
 ```bash
-git clone --single-branch git@github.com:allenai/embodied-clip.git
+git clone --single-branch https://github.com/allenai/embodied-clip.git
 cd embodied-clip/primitive_probing
 
 conda env create --name embclip

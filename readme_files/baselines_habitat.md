@@ -6,7 +6,7 @@ The [habitat branch](https://github.com/allenai/embodied-clip/tree/habitat) is a
 ## Installation
 
 ```bash
-git clone -b habitat --single-branch git@github.com:allenai/embodied-clip.git embclip-habitat
+git clone -b habitat --single-branch https://github.com/allenai/embodied-clip.git embclip-habitat
 cd embclip-habitat
 ```
 

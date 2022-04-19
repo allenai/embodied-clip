@@ -5,7 +5,7 @@ We have [modified](https://github.com/allenai/embodied-clip/compare/allenact...z
 To install, please follow the [instructions for RoboTHOR ObjectNav](baselines_robothor_objectnav.md), but instead clone the [`zeroshot-objectnav` branch](https://github.com/allenai/embodied-clip/tree/zeroshot-objectnav):
 
 ```bash
-git clone -b zeroshot-objectnav --single-branch git@github.com:allenai/embodied-clip.git embclip-zeroshot
+git clone -b zeroshot-objectnav --single-branch https://github.com/allenai/embodied-clip.git embclip-zeroshot
 cd embclip-zeroshot
 
 [ ... ]
