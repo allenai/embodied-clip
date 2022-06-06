@@ -1,7 +1,8 @@
 # Embodied CLIP
 
 Official repository for **Simple but Effective: CLIP Embeddings for Embodied AI**
-[Paper](https://arxiv.org/abs/2111.09888) [Short Video](https://www.youtube.com/watch?v=bnzgmlLePxw)
+
+[[Paper]](https://arxiv.org/abs/2111.09888) [[Short Video]](https://www.youtube.com/watch?v=bnzgmlLePxw)
 
 We present competitive performance on navigation-heavy tasks in Embodied AI using frozen visual representations from [CLIP](https://github.com/openai/CLIP).
 
