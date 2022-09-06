@@ -34,6 +34,13 @@ python -c "import clip; clip.load('RN50')"
 
 Please refer to the [official AllenAct installation instructions](https://allenact.org/installation/installation-allenact) for more details.
 
+### Headless mode
+
+If you would like to use AllenAct on a _headless_ machine (i.e. without a monitor), you'll need to:
+
+1. [Start an x-display](https://allenact.org/installation/installation-framework/#installation-of-ithor-ithor-plugin) (`sudo python scripts/startx.py &`).
+2. Update the [`THOR_COMMIT_ID`](https://github.com/allenai/embodied-clip/blob/49347c2241c9bd481c936870aad75012af3d355d/projects/objectnav_baselines/experiments/robothor/objectnav_robothor_base.py#L16) to `91139c909576f3bf95a187c5b02c6fd455d06b48` (a headless build of AI2-THOR). Also, set `THOR_IS_HEADLESS = True` right below this line.
+
 ## Training
 
 ```bash
