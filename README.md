@@ -8,6 +8,15 @@ We present competitive performance on navigation-heavy tasks in Embodied AI usin
 
 This repository includes all code and pretrained models necessary to replicate the experiments in our paper. We have included forks of other repositories as branches, as we find this is a convenient way to centralize our experiments and track changes.
 
+
+## Notice
+
+The EmbodiedCLIP implementations for RoboTHOR and Rearrangement have been upstreamed into [allenai/allenact](https://github.com/allenai/allenact). If you encounter any bugs related to THOR, please open issues there instead.
+
+If you have general problems related to Habitat, you can refer to the [original Habitat repo](https://github.com/facebookresearch/habitat-lab). If you have issues related to the EmbodiedCLIP implementation in Habitat, you can reach out to us at [allenai/allenact](https://github.com/allenai/allenact/issues) for support.
+
+## Experiments
+
 **Please see the following links with detailed instructions on how to replicate each experiment:**
 
 - Baselines
